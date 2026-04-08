@@ -1,0 +1,934 @@
+package com.minecraftcivilizations.specialization.Recipe;
+
+import com.minecraftcivilizations.specialization.CustomItem.CustomItem;
+import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
+import com.minecraftcivilizations.specialization.Specialization;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Tag;
+import org.bukkit.inventory.*;
+
+import java.util.List;
+
+/**
+ * Registers all metalworking recipes for copper, gold, and iron.
+ *
+ * Recipe chain per metal:
+ *   1. 3 ingots (row)          → 2 plates            (shaped)
+ *   2. 3 plates (column)       → 1 plate set          (shaped, ExactChoice)
+ *   3. plate sets (armor shape) → armor piece          (shaped, ExactChoice)
+ *   4. plate sets (tool shape)  → tool head            (shaped, ExactChoice)
+ *   5. armor piece + leather    → finished armor       (smithing transform)
+ *   6. tool head + tool handle  → finished tool        (shaped, ExactChoice)
+ *
+ * Plus: tool handle recipe (leather + string + stick)
+ *
+ * Copper finished items are custom items (leather/stone base).
+ * Gold/iron finished items are vanilla (GOLDEN_ / IRON_ variants).
+ *
+ * @author Generated for CivLabs metalworking system
+ */
+public class MetalworkingRecipes {
+
+    private static int successCount;
+
+    /**
+     * Register all metalworking recipes. Call from {@link Recipes#registerRecipes(boolean)}.
+     *
+     * @return number of successfully registered recipes
+     */
+    public static int register(List<String> failedExceptions) {
+        successCount = 0;
+
+        // ─── Utility items ───
+        registerToolHandle(failedExceptions);
+        registerWoodShears(failedExceptions);
+        registerWhetstone(failedExceptions);
+
+        // ─── Material chain: padded leather → chainmail plate → armor ───
+        registerPaddedLeather(failedExceptions);
+        registerChainmailPlate(failedExceptions);
+        registerLeatherArmor(failedExceptions);
+        registerChainmailArmor(failedExceptions);
+
+        // ─── Per-metal crafting recipes (plates → plate sets → pieces/heads) ───
+        registerMetalCrafting("copper", Material.COPPER_INGOT, true,  "", failedExceptions);
+        registerMetalCrafting("gold",   Material.GOLD_INGOT,   false, "", failedExceptions);
+        registerMetalCrafting("iron",   Material.IRON_INGOT,   false, "_raw", failedExceptions);
+
+        // ─── Smithing: armor piece + leather armor → finished armor ───
+        registerArmorSmithing("copper", true,  failedExceptions);
+        registerArmorSmithing("gold",   false, failedExceptions);
+
+        // ─── Tool Assembly: tool head + tool handle → finished tool ───
+        registerToolAssembly("copper", true,  failedExceptions);
+        registerToolAssembly("gold",   false, failedExceptions);
+
+        // ─── Iron & Bronze Blueprints ───
+        registerBlueprints("iron",   failedExceptions);
+        registerBlueprints("bronze", failedExceptions);
+
+        // ─── Iron: blueprint-required smithing for armor & tools ───
+        registerBlueprintArmorSmithing("iron", failedExceptions);
+        registerBlueprintToolSmithing("iron",  failedExceptions);
+
+        // ─── Bronze: blend → smelt → ingot → plates → armor/tools ───
+        registerBronzeBlend(failedExceptions);
+        registerBronzeIngotSmelting(failedExceptions);
+        registerBronzeCrafting(failedExceptions);
+        registerBlueprintArmorSmithing("bronze", failedExceptions);
+        registerBlueprintToolSmithing("bronze",  failedExceptions);
+
+        // ─── Crushed Ores: crafting + smelting (copper, iron, gold) ───
+        registerCrushedOres(failedExceptions);
+
+        // ─── Iron Bloom System (furnace only, results overridden by IronBloomSystem) ───
+        registerIronBloomSmelting(failedExceptions);
+
+        // ─── Iron Plate: heating iron ingots ───
+        registerIronIngotHeating(failedExceptions);
+
+        // ─── Hammer system: heads, blueprints, assembly ───
+        registerHammerHeads(failedExceptions);
+        registerHammerBlueprints(failedExceptions);
+        registerHammerAssembly(failedExceptions);
+
+        // ─── Smithing Table (bronze alternative) ───
+        registerBronzeSmithingTable(failedExceptions);
+
+        // ─── Bronze Anvil ───
+        registerBronzeAnvil(failedExceptions);
+
+        Bukkit.getLogger().info("[MetalworkingRecipes] Registered " + successCount + " metalworking recipes.");
+        return successCount;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Helpers
+    // ─────────────────────────────────────────────────────────────
+
+    private static NamespacedKey key(String name) {
+        return new NamespacedKey(Specialization.getInstance(), name);
+    }
+
+    private static CustomItem getItem(String id) {
+        return CustomItemManager.getInstance().getCustomItem(id);
+    }
+
+    /** Creates a 1-count ItemStack for the given custom item (for results / ExactChoice). */
+    private static ItemStack stack(String customItemId) {
+        return getItem(customItemId).createItemStack();
+    }
+
+    /** Creates an n-count ItemStack for the given custom item. */
+    private static ItemStack stack(String customItemId, int amount) {
+        return getItem(customItemId).createItemStack(amount);
+    }
+
+    /** ExactChoice matching a specific custom item. */
+    private static RecipeChoice.ExactChoice exact(String customItemId) {
+        return new RecipeChoice.ExactChoice(stack(customItemId));
+    }
+
+    private static void add(Recipe recipe, String name, List<String> failed) {
+        try {
+            Bukkit.addRecipe(recipe, true);
+            successCount++;
+        } catch (Exception e) {
+            failed.add(name + " (" + e.getMessage() + ")");
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Tool Handle
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Tool Handle recipe:
+     * <pre>
+     *  _L_
+     *  STS
+     *  _L_
+     * </pre>
+     * L = Leather, S = String, T = Stick
+     */
+    private static void registerToolHandle(List<String> failed) {
+        ShapedRecipe r = new ShapedRecipe(key("tool_handle"), stack("tool_handle"));
+        r.shape(" L ", "STS", " L ");
+        r.setIngredient('L', Material.LEATHER);
+        r.setIngredient('S', Material.STRING);
+        r.setIngredient('T', Material.STICK);
+        add(r, "tool_handle", failed);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Wood Shears, Whetstone, Padded Leather, Chainmail, Leather Armor
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Wood Shears: 2 of any log in a diagonal.
+     * <pre>
+     *  L_
+     *  _L
+     * </pre>
+     */
+    private static void registerWoodShears(List<String> failed) {
+        ShapedRecipe r = new ShapedRecipe(key("wood_shear"), stack("wood_shear"));
+        r.shape("L ", " L");
+        r.setIngredient('L', new RecipeChoice.MaterialChoice(Tag.LOGS));
+        add(r, "wood_shear", failed);
+    }
+
+    /**
+     * Whetstone: 3 granite over 3 cobblestone.
+     * <pre>
+     *  GGG
+     *  CCC
+     * </pre>
+     */
+    private static void registerWhetstone(List<String> failed) {
+        ShapedRecipe r = new ShapedRecipe(key("whetstone"), stack("whetstone"));
+        r.shape("GGG", "CCC");
+        r.setIngredient('G', Material.GRANITE);
+        r.setIngredient('C', Material.COBBLESTONE);
+        add(r, "whetstone", failed);
+    }
+
+    /**
+     * Padded Leather: 1 leather + 1 wool (any color), shapeless.
+     */
+    private static void registerPaddedLeather(List<String> failed) {
+        ShapelessRecipe r = new ShapelessRecipe(key("padded_leather"), stack("padded_leather"));
+        r.addIngredient(Material.LEATHER);
+        r.addIngredient(new RecipeChoice.MaterialChoice(Tag.WOOL));
+        add(r, "padded_leather", failed);
+    }
+
+    /**
+     * Chainmail Plate: padded leather in center, 8 iron nuggets around it.
+     * <pre>
+     *  NNN
+     *  NPN
+     *  NNN
+     * </pre>
+     */
+    private static void registerChainmailPlate(List<String> failed) {
+        ShapedRecipe r = new ShapedRecipe(key("armor_plate_chainmail"), stack("armor_plate_chainmail"));
+        r.shape("NNN", "NPN", "NNN");
+        r.setIngredient('N', Material.IRON_NUGGET);
+        r.setIngredient('P', exact("padded_leather"));
+        add(r, "armor_plate_chainmail", failed);
+    }
+
+    /**
+     * Leather armor crafted from padded leather in vanilla armor patterns.
+     */
+    private static void registerLeatherArmor(List<String> failed) {
+        RecipeChoice pl = exact("padded_leather");
+
+        ShapedRecipe helmet = new ShapedRecipe(key("padded_leather_helmet"), new ItemStack(Material.LEATHER_HELMET));
+        helmet.shape("PPP", "P P");
+        helmet.setIngredient('P', pl);
+        add(helmet, "padded_leather_helmet", failed);
+
+        ShapedRecipe chest = new ShapedRecipe(key("padded_leather_chestplate"), new ItemStack(Material.LEATHER_CHESTPLATE));
+        chest.shape("P P", "PPP", "PPP");
+        chest.setIngredient('P', pl);
+        add(chest, "padded_leather_chestplate", failed);
+
+        ShapedRecipe legs = new ShapedRecipe(key("padded_leather_leggings"), new ItemStack(Material.LEATHER_LEGGINGS));
+        legs.shape("PPP", "P P", "P P");
+        legs.setIngredient('P', pl);
+        add(legs, "padded_leather_leggings", failed);
+
+        ShapedRecipe boots = new ShapedRecipe(key("padded_leather_boots"), new ItemStack(Material.LEATHER_BOOTS));
+        boots.shape("P P", "P P");
+        boots.setIngredient('P', pl);
+        add(boots, "padded_leather_boots", failed);
+    }
+
+    /**
+     * Chainmail armor crafted from chainmail plates in vanilla armor patterns.
+     * Results are vanilla CHAINMAIL_* items.
+     */
+    private static void registerChainmailArmor(List<String> failed) {
+        RecipeChoice cp = exact("armor_plate_chainmail");
+
+        ShapedRecipe helmet = new ShapedRecipe(key("chainmail_helmet"), new ItemStack(Material.CHAINMAIL_HELMET));
+        helmet.shape("PPP", "P P");
+        helmet.setIngredient('P', cp);
+        add(helmet, "chainmail_helmet", failed);
+
+        ShapedRecipe chest = new ShapedRecipe(key("chainmail_chestplate"), new ItemStack(Material.CHAINMAIL_CHESTPLATE));
+        chest.shape("P P", "PPP", "PPP");
+        chest.setIngredient('P', cp);
+        add(chest, "chainmail_chestplate", failed);
+
+        ShapedRecipe legs = new ShapedRecipe(key("chainmail_leggings"), new ItemStack(Material.CHAINMAIL_LEGGINGS));
+        legs.shape("PPP", "P P", "P P");
+        legs.setIngredient('P', cp);
+        add(legs, "chainmail_leggings", failed);
+
+        ShapedRecipe boots = new ShapedRecipe(key("chainmail_boots"), new ItemStack(Material.CHAINMAIL_BOOTS));
+        boots.shape("P P", "P P");
+        boots.setIngredient('P', cp);
+        add(boots, "chainmail_boots", failed);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Per-metal crafting: plates, plate sets, armor pieces, tool heads
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * @param usePlatesDirectly if true, armor pieces and tool heads use plates
+     *                          instead of plate stacks, and the plate set recipe is skipped.
+     */
+    private static void registerMetalCrafting(String metal, Material ingot, boolean usePlatesDirectly, String resultSuffix, List<String> failed) {
+        registerPlate(metal, ingot, failed);
+        if (!usePlatesDirectly) {
+            registerPlateSet(metal, failed);
+        } else {
+            // ─── Copper plate set recipe disabled — copper uses plates directly ───
+        }
+        registerArmorPieces(metal, usePlatesDirectly, resultSuffix, failed);
+        registerToolHeads(metal, usePlatesDirectly, resultSuffix, failed);
+    }
+
+    /**
+     * 3 ingots in a row → 2 plates
+     * <pre>III</pre>
+     */
+    private static void registerPlate(String metal, Material ingot, List<String> failed) {
+        String id = "armor_plate_" + metal;
+        ShapedRecipe r = new ShapedRecipe(key(id), stack(id, 2));
+        r.shape("III");
+        // Use ExactChoice with a plain ingot so that custom items sharing the
+        // same base material (e.g. plates, plate sets) are NOT accepted.
+        r.setIngredient('I', new RecipeChoice.ExactChoice(new ItemStack(ingot)));
+        add(r, id, failed);
+    }
+
+    /**
+     * 3 plates in a column → 1 plate set
+     * <pre>
+     * P
+     * P
+     * P
+     * </pre>
+     */
+    private static void registerPlateSet(String metal, List<String> failed) {
+        String id = metal + "_armor_plateset";
+        ShapedRecipe r = new ShapedRecipe(key(id), stack(id));
+        r.shape("P", "P", "P");
+        r.setIngredient('P', exact("armor_plate_" + metal));
+        add(r, id, failed);
+    }
+
+    /**
+     * Armor pieces use plate sets in vanilla armor crafting patterns.
+     * <pre>
+     * Helm:        PPP    Breastplate: P P    Greaves: PPP    Sabaton: P P
+     *              P P                 PPP              P P             P P
+     *                                  PPP              P P
+     * </pre>
+     */
+    private static void registerArmorPieces(String metal, boolean usePlatesDirectly, String resultSuffix, List<String> failed) {
+        RecipeChoice ps = usePlatesDirectly
+                ? exact("armor_plate_" + metal)
+                : exact(metal + "_armor_plateset");
+
+        // Helm: PPP / P P
+        ShapedRecipe helm = new ShapedRecipe(key(metal + "_helm" + resultSuffix), stack(metal + "_helm" + resultSuffix));
+        helm.shape("PPP", "P P");
+        helm.setIngredient('P', ps);
+        add(helm, metal + "_helm" + resultSuffix, failed);
+
+        // Breastplate: P P / PPP / PPP
+        ShapedRecipe breast = new ShapedRecipe(key(metal + "_breastplate" + resultSuffix), stack(metal + "_breastplate" + resultSuffix));
+        breast.shape("P P", "PPP", "PPP");
+        breast.setIngredient('P', ps);
+        add(breast, metal + "_breastplate" + resultSuffix, failed);
+
+        // Greaves: PPP / P P / P P
+        ShapedRecipe greaves = new ShapedRecipe(key(metal + "_greaves" + resultSuffix), stack(metal + "_greaves" + resultSuffix));
+        greaves.shape("PPP", "P P", "P P");
+        greaves.setIngredient('P', ps);
+        add(greaves, metal + "_greaves" + resultSuffix, failed);
+
+        // Sabaton: P P / P P
+        ShapedRecipe sabaton = new ShapedRecipe(key(metal + "_sabaton" + resultSuffix), stack(metal + "_sabaton" + resultSuffix));
+        sabaton.shape("P P", "P P");
+        sabaton.setIngredient('P', ps);
+        add(sabaton, metal + "_sabaton" + resultSuffix, failed);
+    }
+
+    /**
+     * Tool heads use plate sets in the material portion of vanilla tool patterns.
+     * <pre>
+     * Sword: P    Axe: PP    Pickaxe: PPP    Hoe: PP    Shovel: P
+     *        P         P
+     * </pre>
+     */
+    private static void registerToolHeads(String metal, boolean usePlatesDirectly, String resultSuffix, List<String> failed) {
+        RecipeChoice ps = usePlatesDirectly
+                ? exact("armor_plate_" + metal)
+                : exact(metal + "_armor_plateset");
+
+        // Sword head: P / P (2 plate sets)
+        ShapedRecipe sword = new ShapedRecipe(key(metal + "_sword_head" + resultSuffix), stack(metal + "_sword_head" + resultSuffix));
+        sword.shape("P", "P");
+        sword.setIngredient('P', ps);
+        add(sword, metal + "_sword_head" + resultSuffix, failed);
+
+        // Axe head: PP / P_ (3 plate sets)
+        ShapedRecipe axe = new ShapedRecipe(key(metal + "_axe_head" + resultSuffix), stack(metal + "_axe_head" + resultSuffix));
+        axe.shape("PP", "P ");
+        axe.setIngredient('P', ps);
+        add(axe, metal + "_axe_head" + resultSuffix, failed);
+
+        // Pickaxe head: PPP (3 plate sets)
+        ShapedRecipe pick = new ShapedRecipe(key(metal + "_pickaxe_head" + resultSuffix), stack(metal + "_pickaxe_head" + resultSuffix));
+        pick.shape("PPP");
+        pick.setIngredient('P', ps);
+        add(pick, metal + "_pickaxe_head" + resultSuffix, failed);
+
+        // Hoe head: PP (2 plate sets)
+        ShapedRecipe hoe = new ShapedRecipe(key(metal + "_hoe_head" + resultSuffix), stack(metal + "_hoe_head" + resultSuffix));
+        hoe.shape("PP");
+        hoe.setIngredient('P', ps);
+        add(hoe, metal + "_hoe_head" + resultSuffix, failed);
+
+        // Shovel head: P (1 plate set)
+        ShapedRecipe shovel = new ShapedRecipe(key(metal + "_shovel_head" + resultSuffix), stack(metal + "_shovel_head" + resultSuffix));
+        shovel.shape("P");
+        shovel.setIngredient('P', ps);
+        add(shovel, metal + "_shovel_head" + resultSuffix, failed);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Smithing: armor piece + leather armor → finished armor
+    // ─────────────────────────────────────────────────────────────
+
+    /** Maps: [pieceSuffix, armorSlot, leatherMat, goldMat, ironMat] */
+    private static final String[][] ARMOR_MAP = {
+        {"helm",        "helmet",     "LEATHER_HELMET",     "GOLDEN_HELMET",     "IRON_HELMET"},
+        {"breastplate", "chestplate", "LEATHER_CHESTPLATE", "GOLDEN_CHESTPLATE", "IRON_CHESTPLATE"},
+        {"greaves",     "leggings",   "LEATHER_LEGGINGS",   "GOLDEN_LEGGINGS",   "IRON_LEGGINGS"},
+        {"sabaton",     "boots",      "LEATHER_BOOTS",      "GOLDEN_BOOTS",      "IRON_BOOTS"},
+    };
+
+    /**
+     * Smithing Transform recipes:
+     *   Template: (empty)  |  Base: leather armor  |  Addition: armor piece
+     *   → Result: copper custom armor  OR  vanilla gold/iron armor
+     */
+    private static void registerArmorSmithing(String metal, boolean isCopper, List<String> failed) {
+        for (String[] entry : ARMOR_MAP) {
+            String piece     = entry[0]; // helm, breastplate, greaves, sabaton
+            String slot      = entry[1]; // helmet, chestplate, leggings, boots
+            Material leather = Material.valueOf(entry[2]);
+
+            ItemStack result;
+            String name;
+
+            if (isCopper) {
+                // Result is a custom copper armor item on leather base
+                result = stack("copper_" + slot);
+                name   = "copper_" + slot + "_smithing";
+            } else if (metal.equals("gold")) {
+                result = new ItemStack(Material.valueOf(entry[3]));
+                name   = "gold_" + slot + "_smithing";
+            } else { // iron
+                result = new ItemStack(Material.valueOf(entry[4]));
+                name   = "iron_" + slot + "_smithing";
+            }
+
+            SmithingTransformRecipe recipe = new SmithingTransformRecipe(
+                key(name),
+                result,
+                null,                                                      // no template
+                new RecipeChoice.ExactChoice(new ItemStack(leather)),       // base: plain leather armor
+                exact(metal + "_" + piece)                                 // addition: armor piece
+            );
+            add(recipe, name, failed);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Tool Assembly: tool head + tool handle → finished tool
+    // ─────────────────────────────────────────────────────────────
+
+    /** Maps: [headSuffix, toolName, stoneMat, goldMat, ironMat] */
+    private static final String[][] TOOL_MAP = {
+        {"sword_head",   "sword",   "STONE_SWORD",   "GOLDEN_SWORD",   "IRON_SWORD"},
+        {"axe_head",     "axe",     "STONE_AXE",     "GOLDEN_AXE",     "IRON_AXE"},
+        {"pickaxe_head", "pickaxe", "STONE_PICKAXE", "GOLDEN_PICKAXE", "IRON_PICKAXE"},
+        {"hoe_head",     "hoe",     "STONE_HOE",     "GOLDEN_HOE",     "IRON_HOE"},
+        {"shovel_head",  "shovel",  "STONE_SHOVEL",  "GOLDEN_SHOVEL",  "IRON_SHOVEL"},
+    };
+
+    /**
+     * Shaped recipe:
+     * <pre>
+     *  H
+     *  T
+     * </pre>
+     * H = tool head (ExactChoice),  T = tool handle (ExactChoice)
+     * → Result: copper custom tool  OR  vanilla gold/iron tool
+     */
+    private static void registerToolAssembly(String metal, boolean isCopper, List<String> failed) {
+        for (String[] entry : TOOL_MAP) {
+            String head = entry[0]; // sword_head, axe_head, …
+            String tool = entry[1]; // sword, axe, …
+
+            ItemStack result;
+            String name;
+
+            if (isCopper) {
+                result = stack("copper_" + tool);
+                name   = "copper_" + tool + "_assembly";
+            } else if (metal.equals("gold")) {
+                result = new ItemStack(Material.valueOf(entry[3]));
+                name   = "gold_" + tool + "_assembly";
+            } else { // iron
+                result = new ItemStack(Material.valueOf(entry[4]));
+                name   = "iron_" + tool + "_assembly";
+            }
+
+            ShapedRecipe recipe = new ShapedRecipe(key(name), result);
+            recipe.shape("H", "T");
+            recipe.setIngredient('H', exact(metal + "_" + head));
+            recipe.setIngredient('T', exact("tool_handle"));
+            add(recipe, name, failed);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Bronze recipes
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Crushed Bronze Blend: raw copper surrounding, coal in cross, raw gold center → yields 1.
+     * <pre>
+     *  #1#
+     *  121
+     *  #1#
+     * </pre>
+     * # = Raw Copper, 1 = Coal, 2 = Raw Gold
+     */
+    private static void registerBronzeBlend(List<String> failed) {
+        ShapedRecipe r = new ShapedRecipe(key("bronze_blend"), stack("bronze_blend", 1));
+        r.shape("#1#", "121", "#1#");
+        r.setIngredient('#', Material.RAW_COPPER);
+        r.setIngredient('1', Material.COAL);
+        r.setIngredient('2', Material.RAW_GOLD);
+        add(r, "bronze_blend", failed);
+    }
+
+    /**
+     * Bronze Ingot: smelt a bronze blend in a furnace.
+     */
+    private static void registerBronzeIngotSmelting(List<String> failed) {
+        // Furnace
+        FurnaceRecipe furnace = new FurnaceRecipe(
+            key("bronze_ingot"),
+            stack("bronze_ingot"),
+            new RecipeChoice.ExactChoice(stack("bronze_blend")),
+            0.7f,    // experience (same as gold)
+            200      // cook time ticks (10 seconds)
+        );
+        add(furnace, "bronze_ingot", failed);
+
+        // Blast Furnace (half the cook time)
+        BlastingRecipe blast = new BlastingRecipe(
+            key("bronze_ingot_blasting"),
+            stack("bronze_ingot"),
+            new RecipeChoice.ExactChoice(stack("bronze_blend")),
+            0.7f,
+            100      // 5 seconds
+        );
+        add(blast, "bronze_ingot_blasting", failed);
+    }
+
+    /**
+     * Bronze crafting chain:
+     * 3 bronze ingots → 2 bronze plates
+     * plates → armor pieces (helm, breastplate, greaves, sabaton)
+     * plates → tool heads (sword, axe, pickaxe, hoe, shovel)
+     */
+    private static void registerBronzeCrafting(List<String> failed) {
+        // Plate: 3 bronze ingots in a row → 2 plates
+        ShapedRecipe plate = new ShapedRecipe(key("armor_plate_bronze"), stack("armor_plate_bronze", 2));
+        plate.shape("III");
+        plate.setIngredient('I', exact("bronze_ingot"));
+        add(plate, "armor_plate_bronze", failed);
+
+        // ─── Bronze plate set recipe disabled — bronze uses plates directly ───
+        // ShapedRecipe plateset = new ShapedRecipe(key("bronze_armor_plateset"), stack("bronze_armor_plateset"));
+        // plateset.shape("P", "P", "P");
+        // plateset.setIngredient('P', exact("armor_plate_bronze"));
+        // add(plateset, "bronze_armor_plateset", failed);
+
+        // Armor pieces (use plates directly)
+        RecipeChoice ps = exact("armor_plate_bronze");
+
+        ShapedRecipe helm = new ShapedRecipe(key("bronze_helm"), stack("bronze_helm"));
+        helm.shape("PPP", "P P");
+        helm.setIngredient('P', ps);
+        add(helm, "bronze_helm", failed);
+
+        ShapedRecipe breast = new ShapedRecipe(key("bronze_breastplate"), stack("bronze_breastplate"));
+        breast.shape("P P", "PPP", "PPP");
+        breast.setIngredient('P', ps);
+        add(breast, "bronze_breastplate", failed);
+
+        ShapedRecipe greaves = new ShapedRecipe(key("bronze_greaves"), stack("bronze_greaves"));
+        greaves.shape("PPP", "P P", "P P");
+        greaves.setIngredient('P', ps);
+        add(greaves, "bronze_greaves", failed);
+
+        ShapedRecipe sabaton = new ShapedRecipe(key("bronze_sabaton"), stack("bronze_sabaton"));
+        sabaton.shape("P P", "P P");
+        sabaton.setIngredient('P', ps);
+        add(sabaton, "bronze_sabaton", failed);
+
+        // Tool heads (use plates directly)
+        ShapedRecipe sword = new ShapedRecipe(key("bronze_sword_head"), stack("bronze_sword_head"));
+        sword.shape("P", "P");
+        sword.setIngredient('P', ps);
+        add(sword, "bronze_sword_head", failed);
+
+        ShapedRecipe axe = new ShapedRecipe(key("bronze_axe_head"), stack("bronze_axe_head"));
+        axe.shape("PP", "P ");
+        axe.setIngredient('P', ps);
+        add(axe, "bronze_axe_head", failed);
+
+        ShapedRecipe pick = new ShapedRecipe(key("bronze_pickaxe_head"), stack("bronze_pickaxe_head"));
+        pick.shape("PPP");
+        pick.setIngredient('P', ps);
+        add(pick, "bronze_pickaxe_head", failed);
+
+        ShapedRecipe hoe = new ShapedRecipe(key("bronze_hoe_head"), stack("bronze_hoe_head"));
+        hoe.shape("PP");
+        hoe.setIngredient('P', ps);
+        add(hoe, "bronze_hoe_head", failed);
+
+        ShapedRecipe shovel = new ShapedRecipe(key("bronze_shovel_head"), stack("bronze_shovel_head"));
+        shovel.shape("P");
+        shovel.setIngredient('P', ps);
+        add(shovel, "bronze_shovel_head", failed);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Blueprints: crafting + blueprint-required smithing (iron & bronze)
+    // ─────────────────────────────────────────────────────────────
+
+    /** Maps: [componentSuffix, resultName] for blueprint naming. */
+    private static final String[][] BP_PIECE_MAP = {
+        {"helm",        "helmet"},
+        {"breastplate", "chestplate"},
+        {"greaves",     "leggings"},
+        {"sabaton",     "boots"},
+        {"sword_head",  "sword"},
+        {"axe_head",    "axe"},
+        {"pickaxe_head","pickaxe"},
+        {"hoe_head",    "hoe"},
+        {"shovel_head", "shovel"},
+    };
+
+    /**
+     * Blueprint crafting: component + paper + light blue dye → blueprint (shapeless).
+     * Blueprint is named after the RESULT, e.g. iron_helm + paper + dye → iron_helmet_blueprint.
+     */
+    private static void registerBlueprints(String metal, List<String> failed) {
+        for (String[] entry : BP_PIECE_MAP) {
+            String piece  = entry[0]; // helm, sword_head, etc.
+            String result = entry[1]; // helmet, sword, etc.
+            String compId = metal + "_" + piece;
+            String bpId   = metal + "_" + result + "_blueprint";
+
+            ShapelessRecipe r = new ShapelessRecipe(key(bpId), stack(bpId));
+            r.addIngredient(new RecipeChoice.ExactChoice(stack(compId)));
+            r.addIngredient(Material.PAPER);
+            r.addIngredient(Material.LIGHT_BLUE_DYE);
+            add(r, bpId, failed);
+        }
+    }
+
+    /** Maps piece suffix → [armorSlot, leatherMat, ironResultMat] */
+    private static final String[][] BP_ARMOR_MAP = {
+        {"helm",        "helmet",     "LEATHER_HELMET",     "IRON_HELMET"},
+        {"breastplate", "chestplate", "LEATHER_CHESTPLATE", "IRON_CHESTPLATE"},
+        {"greaves",     "leggings",   "LEATHER_LEGGINGS",   "IRON_LEGGINGS"},
+        {"sabaton",     "boots",      "LEATHER_BOOTS",      "IRON_BOOTS"},
+    };
+
+    /**
+     * Blueprint-required armor smithing:
+     *   Template: result-named blueprint | Base: leather armor | Addition: armor piece → finished armor
+     */
+    private static void registerBlueprintArmorSmithing(String metal, List<String> failed) {
+        for (String[] entry : BP_ARMOR_MAP) {
+            String piece     = entry[0]; // helm, breastplate, etc.
+            String slot      = entry[1]; // helmet, chestplate, etc.
+            Material leather = Material.valueOf(entry[2]);
+
+            ItemStack result;
+            String name;
+
+            if (metal.equals("iron")) {
+                result = new ItemStack(Material.valueOf(entry[3]));
+                name   = "iron_" + slot + "_smithing";
+            } else { // bronze
+                result = stack("bronze_" + slot);
+                name   = "bronze_" + slot + "_smithing";
+            }
+
+            SmithingTransformRecipe recipe = new SmithingTransformRecipe(
+                key(name),
+                result,
+                exact(metal + "_" + slot + "_blueprint"),              // template: result-named blueprint
+                new RecipeChoice.ExactChoice(new ItemStack(leather)),   // base: leather armor
+                exact(metal + "_" + piece)                             // addition: armor piece
+            );
+            add(recipe, name, failed);
+        }
+    }
+
+    /** Maps piece suffix → [toolName, ironResultMat] */
+    private static final String[][] BP_TOOL_MAP = {
+        {"sword_head",   "sword",   "IRON_SWORD"},
+        {"axe_head",     "axe",     "IRON_AXE"},
+        {"pickaxe_head", "pickaxe", "IRON_PICKAXE"},
+        {"hoe_head",     "hoe",     "IRON_HOE"},
+        {"shovel_head",  "shovel",  "IRON_SHOVEL"},
+    };
+
+    /**
+     * Blueprint-required tool assembly:
+     *   Template: result-named blueprint | Base: tool handle | Addition: tool head → finished tool
+     *   SmithingAssemblyListener handles client-side display and name fixing.
+     */
+    private static void registerBlueprintToolSmithing(String metal, List<String> failed) {
+        for (String[] entry : BP_TOOL_MAP) {
+            String head = entry[0];
+            String tool = entry[1];
+
+            ItemStack result;
+            String name;
+
+            if (metal.equals("iron")) {
+                result = new ItemStack(Material.valueOf(entry[2]));
+                name   = "iron_" + tool + "_assembly";
+            } else {
+                result = stack("bronze_" + tool);
+                name   = "bronze_" + tool + "_assembly";
+            }
+
+            SmithingTransformRecipe recipe = new SmithingTransformRecipe(
+                key(name),
+                result,
+                exact(metal + "_" + tool + "_blueprint"),  // template
+                exact("tool_handle"),                      // base
+                exact(metal + "_" + head)                  // addition
+            );
+            add(recipe, name, failed);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Smithing Table (bronze alternative)
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Smithing Table: 2 bronze ingots on top + 4 planks on bottom (replaces iron in vanilla recipe).
+     * <pre>
+     *  BB_
+     *  PPP
+     *  PPP
+     * </pre>
+     * (Intentionally non-standard: vanilla uses 2 iron + 4 planks in a 2-wide shape.
+     *  We use 3-wide with the bronze on the left to avoid conflicts.)
+     */
+    private static void registerBronzeSmithingTable(List<String> failed) {
+        ShapedRecipe r = new ShapedRecipe(key("bronze_smithing_table"), new ItemStack(Material.SMITHING_TABLE));
+        r.shape("BB", "PP", "PP");
+        r.setIngredient('B', exact("bronze_ingot"));
+        r.setIngredient('P', new RecipeChoice.MaterialChoice(Tag.PLANKS));
+        add(r, "bronze_smithing_table", failed);
+    }
+
+    /**
+     * Bronze Anvil (Chipped): 7 bronze plates in an anvil pattern.
+     * <pre>
+     *  PPP
+     *   P
+     *  PPP
+     * </pre>
+     */
+    private static void registerBronzeAnvil(List<String> failed) {
+        ShapedRecipe r = new ShapedRecipe(key("bronze_chipped_anvil"), new ItemStack(Material.CHIPPED_ANVIL));
+        r.shape("PPP", " P ", "PPP");
+        r.setIngredient('P', exact("armor_plate_bronze"));
+        add(r, "bronze_chipped_anvil", failed);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Crushed Ores: crafting + smelting
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Crushed ore crafting and smelting.
+     * Pattern (same cross as bronze blend):
+     * <pre>
+     *  R C R
+     *  C R C
+     *  R C R
+     * </pre>
+     * R = 5 raw ore, C = 4 coal
+     * Copper → 1, Gold → 2, Iron → 3
+     *
+     * Smelting: crushed ore → ingot (furnace + blast furnace)
+     */
+    private static void registerCrushedOres(List<String> failed) {
+        // ─── Crafting ───
+        registerCrushedOreCrafting("crushed_copper_ore", Material.RAW_COPPER, 1, failed);
+        registerCrushedOreCrafting("crushed_iron_ore",   Material.RAW_IRON,   3, failed);
+        registerCrushedOreCrafting("crushed_gold_ore",   Material.RAW_GOLD,   2, failed);
+
+        // ─── Smelting: copper & gold → direct ingot (furnace + blast furnace) ───
+        registerCrushedOreSmelting("crushed_copper_ore", Material.COPPER_INGOT, "copper_ingot", 0.7f, failed);
+        registerCrushedOreSmelting("crushed_gold_ore",   Material.GOLD_INGOT,   "gold_ingot",   1.0f, failed);
+    }
+
+    private static void registerCrushedOreCrafting(String id, Material rawOre, int yield, List<String> failed) {
+        ShapedRecipe r = new ShapedRecipe(key(id), stack(id, yield));
+        r.shape("RCR", "CRC", "RCR");
+        r.setIngredient('R', rawOre);
+        r.setIngredient('C', Material.COAL);
+        add(r, id, failed);
+    }
+
+    private static void registerCrushedOreSmelting(String crushedId, Material resultIngot, String keyPrefix, float xp, List<String> failed) {
+        // Furnace
+        FurnaceRecipe furnace = new FurnaceRecipe(
+            key(keyPrefix + "_from_crushed"),
+            new ItemStack(resultIngot),
+            new RecipeChoice.ExactChoice(stack(crushedId)),
+            xp,
+            200  // 10 seconds
+        );
+        add(furnace, keyPrefix + "_from_crushed", failed);
+
+        // Blast Furnace (half cook time)
+        BlastingRecipe blast = new BlastingRecipe(
+            key(keyPrefix + "_from_crushed_blasting"),
+            new ItemStack(resultIngot),
+            new RecipeChoice.ExactChoice(stack(crushedId)),
+            xp,
+            100  // 5 seconds
+        );
+        add(blast, keyPrefix + "_from_crushed_blasting", failed);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Iron Bloom: initial smelting + reheat
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Iron bloom creation and reheating.
+     * IronBloomSystem.onFurnaceSmelt overrides the results with properly
+     * initialized blooms (damage + heat level).
+     * Reheat uses MaterialChoice so worked blooms with different damage/PDC match.
+     */
+    private static void registerIronBloomSmelting(List<String> failed) {
+        // Initial: crushed_iron_ore → bloom
+        FurnaceRecipe create = new FurnaceRecipe(
+            key("iron_bloom_from_crushed"),
+            stack("iron_bloom"),
+            new RecipeChoice.ExactChoice(stack("crushed_iron_ore")),
+            0.7f,
+            200  // 10 seconds
+        );
+        add(create, "iron_bloom_from_crushed", failed);
+
+        // Reheat: CARROT_ON_A_STICK → bloom (MaterialChoice so any damage/PDC matches)
+        // IronBloomSystem validates it's actually an iron_bloom and blocks others
+        FurnaceRecipe reheat = new FurnaceRecipe(
+            key("iron_bloom_reheat"),
+            stack("iron_bloom"),
+            new RecipeChoice.MaterialChoice(Material.CARROT_ON_A_STICK),
+            0.0f,
+            160  // overridden by FurnaceStartSmeltEvent
+        );
+        add(reheat, "iron_bloom_reheat", failed);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Iron Plate: heating iron ingots (+ armor_plate_iron reheating)
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Furnace recipe for heating iron ingots and reheating armor_plate_iron.
+     * Both are IRON_INGOT base, so one MaterialChoice recipe handles both.
+     * IronBloomSystem.onFurnaceSmelt distinguishes by custom ID and sets
+     * the result with Yellow Hot + unstackable.
+     */
+    private static void registerIronIngotHeating(List<String> failed) {
+        FurnaceRecipe heat = new FurnaceRecipe(
+            key("iron_ingot_heat"),
+            new ItemStack(Material.IRON_INGOT),
+            new RecipeChoice.MaterialChoice(Material.IRON_INGOT),
+            0.0f,
+            200  // 10 seconds default; overridden by FurnaceStartSmeltEvent for plates
+        );
+        add(heat, "iron_ingot_heat", failed);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Hammer system: heads, blueprints, assembly
+    // ─────────────────────────────────────────────────────────────
+
+    private static void registerHammerHeads(List<String> failed) {
+        // Bronze hammer head: 4 bronze plates in 2x2
+        ShapedRecipe bronzeHead = new ShapedRecipe(key("bronze_hammer_head"), stack("bronze_hammer_head"));
+        bronzeHead.shape("PP", "PP");
+        bronzeHead.setIngredient('P', exact("armor_plate_bronze"));
+        add(bronzeHead, "bronze_hammer_head", failed);
+
+        // Iron hammer head: 4 iron plate sets (cold) in 2x2
+        ShapedRecipe ironHead = new ShapedRecipe(key("iron_hammer_head"), stack("iron_hammer_head"));
+        ironHead.shape("SS", "SS");
+        ironHead.setIngredient('S', exact("iron_armor_plateset"));
+        add(ironHead, "iron_hammer_head", failed);
+    }
+
+    private static void registerHammerBlueprints(List<String> failed) {
+        for (String metal : new String[]{"bronze", "iron"}) {
+            String bpId = metal + "_hammer_blueprint";
+            String headId = metal + "_hammer_head";
+
+            ShapelessRecipe r = new ShapelessRecipe(key(bpId), stack(bpId));
+            r.addIngredient(new RecipeChoice.ExactChoice(stack(headId)));
+            r.addIngredient(Material.PAPER);
+            r.addIngredient(Material.LIGHT_BLUE_DYE);
+            add(r, bpId, failed);
+        }
+    }
+
+    private static void registerHammerAssembly(List<String> failed) {
+        for (String metal : new String[]{"bronze", "iron"}) {
+            String name = metal + "_hammer_assembly";
+
+            SmithingTransformRecipe recipe = new SmithingTransformRecipe(
+                key(name),
+                stack(metal + "_hammer"),
+                exact(metal + "_hammer_blueprint"),
+                exact("tool_handle"),
+                exact(metal + "_hammer_head")
+            );
+            add(recipe, name, failed);
+        }
+    }
+}
