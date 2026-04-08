@@ -1,0 +1,29 @@
+name: Specialization
+version: '0.0.0.1'
+main: com.minecraftcivilizations.specialization.Specialization
+api-version: '1.21.8'
+depend:
+  - MinecraftCivilizationsCore
+  - ProtocolLib
+authors: [ DNFneca ]
+description: Lyphea
+
+commands:
+  class:
+    description: Open your class progression GUI
+    usage: /class
+    permission: specialization.class
+
+  simulatehit:
+    description: Simulate a combat hit for testing.
+    usage: /simulatehit
+    permission: specialization.simulatehit
+
+permissions:
+  specialization.class:
+    description: Allows players to open the class GUI.
+    default: true
+
+  specialization.simulatehit:
+    description: Allows testing combat hits.
+    default: op
