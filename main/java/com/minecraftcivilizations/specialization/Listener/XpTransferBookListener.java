@@ -23,8 +23,9 @@ import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import static com.minecraftcivilizations.specialization.util.MathUtils.*;
-import static org.bukkit.ChatColor.*;
 
 import java.util.*;
 
@@ -92,11 +93,11 @@ public class XpTransferBookListener implements Listener {
             int librarianLevel = cp.getSkillLevel(SkillType.LIBRARIAN);
             int maxLevels = 3 * librarianLevel;
 
-            book_meta.setDisplayName(ChatColor.AQUA + "XP Transfer Book");
-            book_meta.setLore(List.of(
-                    ChatColor.GRAY + "Crafted by " + player.getName(),
-                    ChatColor.DARK_AQUA + "Write an amount and sign to store XP.",
-                    ChatColor.DARK_RED + "Max of " + maxLevels + " levels"
+            book_meta.displayName(Component.text("XP Transfer Book").color(NamedTextColor.AQUA));
+            book_meta.lore(List.of(
+                    Component.text("Crafted by " + player.getName()).color(NamedTextColor.GRAY),
+                    Component.text("Write an amount and sign to store XP.").color(NamedTextColor.DARK_AQUA),
+                    Component.text("Max of " + maxLevels + " levels").color(NamedTextColor.DARK_RED)
             ));
             applyBookInstructions(book_meta, maxLevels);
             book_meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
@@ -124,7 +125,7 @@ public class XpTransferBookListener implements Listener {
             ItemStack is = player.getInventory().getItemInMainHand();
             is.setAmount(is.getAmount()-1);
 
-            Debug.broadcast("xpbook", WHITE+player.getName()+" consumed an XP book of "+GREEN+xp+WHITE+" xp");
+            Debug.broadcast("xpbook", "<white>"+player.getName()+" consumed an XP book of <green>"+xp+"<white> xp");
             new SmartEntitySpiral(player, xp);
         }
     }
@@ -155,7 +156,7 @@ public class XpTransferBookListener implements Listener {
 
         long now = System.currentTimeMillis();
         if (now - lastSignTime.getOrDefault(player.getUniqueId(), 0L) < 1000L) {
-            PlayerUtil.message(player,ChatColor.RED + "Wait a moment before signing another book.");
+            PlayerUtil.message(player, "<red>Wait a moment before signing another book.");
             return;
         }
         lastSignTime.put(player.getUniqueId(), now);
@@ -163,7 +164,7 @@ public class XpTransferBookListener implements Listener {
         BookMeta meta = event.getNewBookMeta();
         List<String> pages = meta.getPages();
         if (pages.isEmpty()) {
-            PlayerUtil.message(player,ChatColor.RED + "bruv what are you doing?");
+            PlayerUtil.message(player, "<red>bruv what are you doing?");
             return;
         }
 
@@ -172,12 +173,12 @@ public class XpTransferBookListener implements Listener {
         if(page_split.length<2){
             return;
         }
-        String number_string = ChatColor.stripColor(page_split[1]).strip();
+        String number_string = page_split[1].strip();
         int requestedLevels;
         try{
             requestedLevels = Math.max(0, Integer.valueOf(number_string));
         }catch(NumberFormatException e){
-            PlayerUtil.message(player,ChatColor.RED + "Invalid number entered: "+number_string);
+            PlayerUtil.message(player, "<red>Invalid number entered: " + number_string);
             return;
         }
 
@@ -194,12 +195,12 @@ public class XpTransferBookListener implements Listener {
 
         //Check if any xp is being transfered
         if(totalXp<=0){
-            PlayerUtil.message(player,ChatColor.RED+"You have no xp to transfer. Go play the game.");
+            PlayerUtil.message(player, "<red>You have no xp to transfer. Go play the game.");
             return;
         }
 
         // this temporarily stores the metadata to be transfered into the new book meta later
-        meta.setDisplayName(ChatColor.RESET+""+ChatColor.AQUA+"Tome of Knowledge with " + totalXp + " XP");
+        meta.displayName(Component.text("Tome of Knowledge with " + totalXp + " XP").color(NamedTextColor.AQUA));
 
         player.setTotalExperience(targetXp);
         player.setLevel(playerLevel - requestedLevels);
@@ -216,22 +217,21 @@ public class XpTransferBookListener implements Listener {
         ItemStack xpBook = new ItemStack(Material.BOOK);
         ItemMeta xpMeta = xpBook.getItemMeta();
 
-        Debug.broadcast("xpbook", WHITE+"Xp Book created by "+YELLOW+player.getName()+YELLOW+" with "+GREEN+totalXp+WHITE+" xp");
+        Debug.broadcast("xpbook", "<white>Xp Book created by <yellow>"+player.getName()+"<yellow> with <green>"+totalXp+"<white> xp");
 
         if (player.getInventory().getItemInMainHand().getType() != Material.WRITABLE_BOOK){
-            PlayerUtil.message(player,GREEN + "Stop trying to exploit nerd...");
+            PlayerUtil.message(player, "<green>Stop trying to exploit nerd...");
             return;
         }
 
 
-        xpMeta.setDisplayName(old_meta.getDisplayName());
-//            xpMeta.setDisplayNae(ChatColor.LIGHT_PURPLE + "Stored XP Book");
-        xpMeta.setLore(List.of(
-                        GRAY + "Shift-right-click to absorb.",
-                    LIGHT_PURPLE+old_meta.getTitle(),
-    //                DARK_PURPLE + "Contains " + totalXp + " XP",
-                    WHITE + "Signed by: " + GOLD+player.getName())
-        );
+        xpMeta.displayName(old_meta.displayName());
+        xpMeta.lore(List.of(
+                Component.text("Shift-right-click to absorb.").color(NamedTextColor.GRAY),
+                Component.text(old_meta.getTitle() != null ? old_meta.getTitle() : "").color(NamedTextColor.LIGHT_PURPLE),
+                Component.text("Signed by: ").color(NamedTextColor.WHITE)
+                        .append(Component.text(player.getName()).color(NamedTextColor.GOLD))
+        ));
         // ChatColor.GOLD+event.getNewBookMeta().getTitle())
         xpMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         xpMeta.setEnchantmentGlintOverride(true);

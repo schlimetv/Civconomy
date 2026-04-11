@@ -18,6 +18,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.*;
+import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.projectiles.ProjectileSource;
@@ -34,6 +35,7 @@ import static org.bukkit.event.entity.EntityDamageEvent.DamageModifier.*;
  * Routes damage listeners
  * @author Alectriciti ⚡
  */
+@SuppressWarnings("deprecation") // DamageModifier API deprecated in Paper; migration deferred
 public class CombatManager implements Listener {
 
 
@@ -102,7 +104,9 @@ public class CombatManager implements Listener {
         ProjectileSource source = projectile.getShooter();
         //TODO firework check
         if(source instanceof LivingEntity shooter){
-            ItemStack weapon = shooter.getEquipment().getItemInMainHand();
+            EntityEquipment shooterEquip = shooter.getEquipment();
+            if (shooterEquip == null) return;
+            ItemStack weapon = shooterEquip.getItemInMainHand();
             switch(weapon.getType()){
                 case BOW:
                     if(shooter instanceof Player ps){

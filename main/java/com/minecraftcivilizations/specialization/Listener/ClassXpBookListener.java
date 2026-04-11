@@ -6,7 +6,8 @@ import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -66,11 +67,11 @@ public class ClassXpBookListener implements Listener {
 
         ItemStack result = new ItemStack(Material.WRITABLE_BOOK);
         result.editMeta(BookMeta.class, m -> {
-            m.setDisplayName(ChatColor.AQUA + "Class XP Book");
-            m.setLore(List.of(
-                    ChatColor.GRAY + "Capacity: " + capacity + " CXP",
-                    ChatColor.DARK_AQUA + "Write a class name and sign to seal CXP.",
-                    ChatColor.DARK_RED + "Irreversible!"
+            m.displayName(Component.text("Class XP Book").color(NamedTextColor.AQUA));
+            m.lore(List.of(
+                    Component.text("Capacity: " + capacity + " CXP").color(NamedTextColor.GRAY),
+                    Component.text("Write a class name and sign to seal CXP.").color(NamedTextColor.DARK_AQUA),
+                    Component.text("Irreversible!").color(NamedTextColor.DARK_RED)
             ));
             m.addPage(buildBookTemplate(capacity));
             m.setEnchantmentGlintOverride(true);
@@ -95,23 +96,23 @@ public class ClassXpBookListener implements Listener {
         // Parse class name from signed page
         List<String> pages = event.getNewBookMeta().getPages();
         if (pages.isEmpty()) {
-            PlayerUtil.message(player, ChatColor.RED + "The book is empty.");
+            PlayerUtil.message(player, "<red>The book is empty.");
             return;
         }
 
         String[] split = pages.getFirst().split("Class:");
         if (split.length < 2) {
-            PlayerUtil.message(player, ChatColor.RED + "No class found. Write a class name after 'Class:'");
+            PlayerUtil.message(player, "<red>No class found. Write a class name after 'Class:'");
             return;
         }
 
-        String classNameRaw = ChatColor.stripColor(split[1]).strip().toUpperCase();
+        String classNameRaw = split[1].strip().toUpperCase();
 
         SkillType skillType;
         try {
             skillType = SkillType.valueOf(classNameRaw);
         } catch (IllegalArgumentException e) {
-            PlayerUtil.message(player, ChatColor.RED + "Unknown class: '" + classNameRaw
+            PlayerUtil.message(player, "<red>Unknown class: '" + classNameRaw
                     + "'. Valid: FARMER, BUILDER, MINER, HEALER, LIBRARIAN, GUARDSMAN, BLACKSMITH");
             return;
         }
@@ -121,7 +122,7 @@ public class ClassXpBookListener implements Listener {
 
         double currentXp = cp.getSkill(skillType).getXp();
         if (currentXp < capacity) {
-            PlayerUtil.message(player, ChatColor.RED + "Not enough " + SkillType.getDisplayName(skillType)
+            PlayerUtil.message(player, "<red>Not enough " + SkillType.getDisplayName(skillType)
                     + " XP. You have " + (int) currentXp + " but need " + capacity + ".");
             return;
         }
@@ -136,13 +137,14 @@ public class ClassXpBookListener implements Listener {
 
             ItemStack filledBook = new ItemStack(Material.BOOK);
             filledBook.editMeta(m -> {
-                m.setDisplayName(ChatColor.LIGHT_PURPLE + "Class XP: "
-                        + SkillType.getDisplayName(finalSkill) + " (" + finalCapacity + ")");
-                m.setLore(List.of(
-                        ChatColor.GRAY + "Class: " + SkillType.getDisplayName(finalSkill),
-                        ChatColor.DARK_AQUA + "Contains " + finalCapacity + " CXP",
-                        ChatColor.YELLOW + "Shift-right-click to absorb.",
-                        ChatColor.WHITE + "Signed by: " + ChatColor.GOLD + player.getName()
+                m.displayName(Component.text("Class XP: " + SkillType.getDisplayName(finalSkill)
+                        + " (" + finalCapacity + ")").color(NamedTextColor.LIGHT_PURPLE));
+                m.lore(List.of(
+                        Component.text("Class: " + SkillType.getDisplayName(finalSkill)).color(NamedTextColor.GRAY),
+                        Component.text("Contains " + finalCapacity + " CXP").color(NamedTextColor.DARK_AQUA),
+                        Component.text("Shift-right-click to absorb.").color(NamedTextColor.YELLOW),
+                        Component.text("Signed by: ").color(NamedTextColor.WHITE)
+                                .append(Component.text(player.getName()).color(NamedTextColor.GOLD))
                 ));
                 m.setEnchantmentGlintOverride(true);
                 m.getPersistentDataContainer().set(CLASS_XP_BOOK_STORED_XP_KEY,
@@ -178,7 +180,7 @@ public class ClassXpBookListener implements Listener {
         try {
             skillType = SkillType.valueOf(skillName);
         } catch (IllegalArgumentException e) {
-            PlayerUtil.message(player, ChatColor.RED + "This book contains invalid data.");
+            PlayerUtil.message(player, "<red>This book contains invalid data.");
             return;
         }
 

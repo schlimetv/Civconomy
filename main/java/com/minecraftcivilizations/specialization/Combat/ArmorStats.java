@@ -114,9 +114,11 @@ public final class ArmorStats {
 
     public static Sound getArmorSound(Entity entity) {
         if (!(entity instanceof LivingEntity living)) return null;
+        EntityEquipment equipment = living.getEquipment();
+        if (equipment == null) return null;
         List<ItemStack> valid = new ArrayList<>();
 
-        for (ItemStack armor : living.getEquipment().getArmorContents()) {
+        for (ItemStack armor : equipment.getArmorContents()) {
             if (armor != null && armor.getType() != Material.AIR) {
                 valid.add(armor);
             }

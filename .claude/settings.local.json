@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew compileJava -Xlint:all)",
+      "Bash(./gradlew compileJava)",
+      "Bash(grep -v \"^$\\\\|UP-TO-DATE\\\\|Deprecated\\\\|warning-mode\\\\|docs.gradle\\\\|configuration cache\\\\|Incubating\\\\|BUILD\\\\|actionable\")",
+      "Bash(grep -v \"^.$\\\\|^..$\")",
+      "Bash(./gradlew clean:*)",
+      "Bash(grep -v \"^$\\\\|UP-TO-DATE\\\\|Incubating\\\\|Deprecated\\\\|--warning\\\\|docs.gradle\\\\|Consider\\\\|BUILD\\\\|actionable\\\\|paperweightUser\")",
+      "Bash(./gradlew compileJava -Xlint:deprecation)",
+      "Bash(./gradlew compileJava --rerun-tasks)"
+    ]
+  }
+}

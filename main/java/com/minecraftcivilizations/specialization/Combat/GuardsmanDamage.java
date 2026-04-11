@@ -26,6 +26,7 @@ import static org.bukkit.event.entity.EntityDamageEvent.DamageModifier.*;
  * Carefully balanced, hand-coded with care
  * @author Alectriciti ⚡
  */
+@SuppressWarnings("deprecation") // DamageModifier API deprecated in Paper; migration deferred
 public class GuardsmanDamage implements Listener {
 
     Specialization plugin;

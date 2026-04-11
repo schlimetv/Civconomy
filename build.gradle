@@ -99,6 +99,13 @@ tasks {
     }
 }
 
+sourceSets {
+    main {
+        java { srcDirs = ['main/java'] }
+        resources { srcDirs = ['main/resources'] }
+    }
+}
+
 def targetJavaVersion = 23
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)

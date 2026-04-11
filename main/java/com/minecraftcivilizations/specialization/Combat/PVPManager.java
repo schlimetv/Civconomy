@@ -487,7 +487,7 @@ public class PVPManager implements Listener, CommandExecutor {
             for (ItemStack item : ItemSerialization.fromBytes(invBytes)) {
                 if (item != null) {
                     zombie.getWorld().dropItemNaturally(zombie.getLocation(), item);
-                    Debug.broadcast("combatlog", "<grey>[Mannequin Item]: " + item.getItemMeta().displayName());
+                    Debug.broadcast("combatlog", "<grey>[Mannequin Item]: " + (item.hasItemMeta() ? item.getItemMeta().displayName() : item.getType().name()));
                 }
             }
             marker.getPersistentDataContainer().remove(INVENTORY_KEY);

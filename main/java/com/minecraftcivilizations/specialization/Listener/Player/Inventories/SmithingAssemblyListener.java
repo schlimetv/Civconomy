@@ -7,6 +7,8 @@ import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.Specialization;
 import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
@@ -505,27 +507,28 @@ public class SmithingAssemblyListener implements Listener {
             }
 
             // Lore: stats (if hidden) + temper tag + poorly hardened
-            List<String> lore = m.hasLore() && m.getLore() != null
-                ? new ArrayList<>(m.getLore()) : new ArrayList<>();
+            List<Component> lore = m.lore() != null ? new ArrayList<>(m.lore()) : new ArrayList<>();
 
             // For purple tools with hidden attributes, show clean stat lines
             if (purple && isTool) {
-                lore.add("");
-                lore.add(ChatColor.GRAY + "When in Main Hand:");
+                lore.add(Component.empty());
+                lore.add(Component.text("When in Main Hand:").color(NamedTextColor.GRAY));
                 if (mat == Material.IRON_SWORD) {
-                    lore.add(ChatColor.DARK_GREEN + " 7 Attack Damage");
-                    lore.add(ChatColor.DARK_GREEN + " 1.6 Attack Speed");
+                    lore.add(Component.text(" 7 Attack Damage").color(NamedTextColor.DARK_GREEN));
+                    lore.add(Component.text(" 1.6 Attack Speed").color(NamedTextColor.DARK_GREEN));
                 } else if (mat == Material.IRON_AXE) {
-                    lore.add(ChatColor.DARK_GREEN + " 9 Attack Damage");
-                    lore.add(ChatColor.DARK_GREEN + " 1.0 Attack Speed");
+                    lore.add(Component.text(" 9 Attack Damage").color(NamedTextColor.DARK_GREEN));
+                    lore.add(Component.text(" 1.0 Attack Speed").color(NamedTextColor.DARK_GREEN));
                 }
             }
 
-            lore.add(purple ? "\u00A75Hardened" : "\u00A7bToughened");
+            lore.add(purple
+                    ? Component.text("Hardened").color(NamedTextColor.DARK_PURPLE)
+                    : Component.text("Toughened").color(NamedTextColor.AQUA));
             if (poorlyHardened > 0) {
-                lore.add(ChatColor.RED + "Poorly Hardened " + toRoman(poorlyHardened));
+                lore.add(Component.text("Poorly Hardened " + toRoman(poorlyHardened)).color(NamedTextColor.RED));
             }
-            m.setLore(lore);
+            m.lore(lore);
         });
     }
 

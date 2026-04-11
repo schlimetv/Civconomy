@@ -1,5 +1,8 @@
 package com.minecraftcivilizations.specialization.util;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
@@ -9,7 +12,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class ItemStackUtils {
 
@@ -20,49 +22,51 @@ public class ItemStackUtils {
         ItemMeta meta = item_stack.getItemMeta();
         if (meta == null || !meta.hasLore()) return false;
 
-        List<String> lore = meta.getLore();
+        List<Component> lore = meta.lore();
         if (lore == null) return false;
-        return line < lore.size() && lore.get(line) != null && !lore.get(line).isEmpty();
+        if (line >= lore.size()) return false;
+        Component comp = lore.get(line);
+        return comp != null && !PlainTextComponentSerializer.plainText().serialize(comp).isEmpty();
     }
 
     /**
      * Sets/overwrites a single lore line on the item.
-     * Preserves other existing lines. Expands the lore list with empty strings if necessary.
+     * Preserves other existing lines. Expands the lore list with empty components if necessary.
+     * Accepts legacy section-coded strings (e.g. §c, §b) and converts them to Adventure Components.
      */
     public static void setLoreLine(@NotNull ItemStack item_stack, int line, String loreText) {
         ItemMeta meta = item_stack.getItemMeta();
         if (meta == null) return;
 
-        List<String> lore_list = meta.hasLore()
-                ? new ArrayList<>(Objects.requireNonNull(meta.getLore()))
+        List<Component> lore_list = meta.lore() != null
+                ? new ArrayList<>(meta.lore())
                 : new ArrayList<>();
 
-        // Ensure list is large enough
         while (lore_list.size() <= line) {
-            lore_list.add("");
+            lore_list.add(Component.empty());
         }
 
-        lore_list.set(line, loreText == null ? "" : loreText);
-        meta.setLore(lore_list);
+        lore_list.set(line, toComponent(loreText));
+        meta.lore(lore_list);
         item_stack.setItemMeta(meta);
     }
 
     /**
      * Sets/overwrites a single lore line on the item.
-     * Preserves other existing lines. Expands the lore list with empty strings if necessary.
+     * Preserves other existing lines. Expands the lore list with empty components if necessary.
+     * Accepts legacy section-coded strings (e.g. §c, §b) and converts them to Adventure Components.
      */
     public static void setLoreLine(ItemMeta meta, int line, String loreText) {
-        List<String> lore_list = meta.hasLore()
-                ? new ArrayList<>(Objects.requireNonNull(meta.getLore()))
+        List<Component> lore_list = meta.lore() != null
+                ? new ArrayList<>(meta.lore())
                 : new ArrayList<>();
 
-        // Ensure list is large enough
         while (lore_list.size() <= line) {
-            lore_list.add("");
+            lore_list.add(Component.empty());
         }
 
-        lore_list.set(line, loreText == null ? "" : loreText);
-        meta.setLore(lore_list);
+        lore_list.set(line, toComponent(loreText));
+        meta.lore(lore_list);
     }
 
     /**
@@ -80,7 +84,8 @@ public class ItemStackUtils {
 
     /**
      * Sets/overwrites a single lore line on the item and marks it with the given NamespacedKey in the PDC.
-     * If the flag already exists this method does nothing
+     * If the flag already exists this method does nothing.
+     * Accepts legacy section-coded strings (e.g. §c, §b) and converts them to Adventure Components.
      */
     public static void setLoreTag(ItemStack item_stack, NamespacedKey key, int line, String lore) {
         if (item_stack == null || key == null || line < 0) return;
@@ -88,25 +93,31 @@ public class ItemStackUtils {
         ItemMeta meta = item_stack.getItemMeta();
         if (meta == null) return;
 
-        // If already tagged, don't reapply
         if (meta.getPersistentDataContainer().has(key, PersistentDataType.BYTE)) return;
 
-        List<String> lore_list = meta.hasLore()
-                ? new ArrayList<>(Objects.requireNonNull(meta.getLore()))
+        List<Component> lore_list = meta.lore() != null
+                ? new ArrayList<>(meta.lore())
                 : new ArrayList<>();
 
-        // Expand to required size (fill with empty strings)
         while (lore_list.size() <= line) {
-            lore_list.add("");
+            lore_list.add(Component.empty());
         }
 
-        lore_list.set(line, lore == null ? "" : lore);
+        lore_list.set(line, toComponent(lore));
 
-        meta.setLore(lore_list);
-        // mark with a byte flag (value 1)
+        meta.lore(lore_list);
         meta.getPersistentDataContainer().set(key, PersistentDataType.BYTE, (byte) 1);
 
         item_stack.setItemMeta(meta);
+    }
+
+    /**
+     * Converts a legacy section-coded string to an Adventure Component.
+     * Null or empty input returns Component.empty().
+     */
+    private static Component toComponent(String text) {
+        if (text == null || text.isEmpty()) return Component.empty();
+        return LegacyComponentSerializer.legacySection().deserialize(text);
     }
 
     // Returns hunger points (food "nutrition") restored by one unit of the given Material.

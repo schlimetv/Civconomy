@@ -150,7 +150,7 @@ public class PacketListener extends PacketAdapter {
 
         Player player = event.getPlayer();
 
-        if(!player.getEquipment().getItemInMainHand().getType().equals(Material.CROSSBOW)) return;
+        if (player.getInventory().getItemInMainHand().getType() != Material.CROSSBOW) return;
 
 
         // Here you can filter only your emote crossbows

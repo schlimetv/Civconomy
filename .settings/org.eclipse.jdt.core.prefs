@@ -1,0 +1,25 @@
+eclipse.preferences.version=1
+org.eclipse.jdt.core.classpath.outputOverlappingAnotherSource=ignore
+org.eclipse.jdt.core.compiler.codegen.targetPlatform=23
+org.eclipse.jdt.core.compiler.compliance=23
+org.eclipse.jdt.core.compiler.source=23
+
+# Incomplete switch on enum — Material grows every MC version, never exhaustive
+# incompleteEnumSwitch = colon-style (case X:), switchExpressionsYieldMissingDefaultCase = arrow-style (case X ->)
+org.eclipse.jdt.core.compiler.problem.incompleteEnumSwitch=ignore
+org.eclipse.jdt.core.compiler.problem.switchExpressionsYieldMissingDefaultCase=ignore
+org.eclipse.jdt.core.compiler.problem.missingSwitchDefaultCase=ignore
+
+# Unused locals / parameters — cosmetic noise in event handlers
+org.eclipse.jdt.core.compiler.problem.unusedLocal=ignore
+org.eclipse.jdt.core.compiler.problem.unusedParameter=ignore
+org.eclipse.jdt.core.compiler.problem.unusedPrivateMember=warning
+
+# Unchecked casts — all internal, plugin controls what goes in
+org.eclipse.jdt.core.compiler.problem.uncheckedTypeOperation=ignore
+org.eclipse.jdt.core.compiler.problem.rawTypeReference=ignore
+
+# Keep deprecation warnings visible (Paper API removals matter)
+org.eclipse.jdt.core.compiler.problem.deprecation=warning
+org.eclipse.jdt.core.compiler.problem.deprecationInDeprecatedCode=ignore
+org.eclipse.jdt.core.compiler.problem.deprecationWhenOverridingDeprecatedMethod=ignore

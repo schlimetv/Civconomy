@@ -25,6 +25,7 @@ import java.util.Map;
 
 import static org.bukkit.event.entity.EntityDamageEvent.DamageModifier.*;
 
+@SuppressWarnings("deprecation") // DamageModifier API deprecated in Paper; migration deferred
 public class ExplosionDamage implements Listener {
 
 

@@ -345,6 +345,7 @@ public class ArmorEquipAttributes implements Listener {
     }
 
     public boolean hasWeight(ItemStack item){
+        if (item == null || !item.hasItemMeta()) return false;
         return item.getItemMeta().getPersistentDataContainer().has(WEIGHT_KEY);
     }
 
