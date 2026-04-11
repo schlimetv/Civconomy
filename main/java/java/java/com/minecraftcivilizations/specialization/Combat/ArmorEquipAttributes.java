@@ -361,6 +361,21 @@ public class ArmorEquipAttributes implements Listener {
      * Used for default armor
      */
     public ItemStack applyStats(ItemStack item){
+        // Steel armor has custom stats applied at smithing — don't override
+        if (item.hasItemMeta() && item.getItemMeta().getPersistentDataContainer().has(
+                com.minecraftcivilizations.specialization.Listener.Player.Inventories.SmithingAssemblyListener.PURPLE_STEEL_KEY,
+                PersistentDataType.BYTE)) {
+            return item;
+        }
+        // Also check for steel toughness modifier (blue tempered steel)
+        if (item.hasItemMeta()) {
+            var mods = item.getItemMeta().getAttributeModifiers(Attribute.ARMOR);
+            if (mods != null) {
+                for (var mod : mods) {
+                    if (mod.getKey().getNamespace().equals("steel")) return item;
+                }
+            }
+        }
         item = applyArmorStats(item, new ArmorStatsCustom(-1, 0), BLUE);
         return item;
     }

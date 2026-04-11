@@ -4,6 +4,7 @@ import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItem;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
+import com.minecraftcivilizations.specialization.CustomItem.IronBloomSystem;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.SkillType;
 import minecraftcivilizations.com.minecraftCivilizationsCore.MinecraftCivilizationsCore;
@@ -84,7 +85,14 @@ public class FurnaceListener implements Listener {
         // Skip items handled by IronBloomSystem (runs at HIGH priority before this)
         if (customId.equals("iron_bloom") || customId.equals("wrought_iron_ingot")
                 || customId.equals("armor_plate_iron") || customId.equals("crushed_iron_ore")
-                || customId.startsWith("iron_") && customId.endsWith("_raw")) {
+                || customId.equals("steel_ingot") || customId.equals("armor_plate_steel")
+                || customId.equals("pig_iron") || customId.equals("coal_coke")
+                || customId.equals("steel_blend")
+                || (customId.startsWith("iron_") && customId.endsWith("_raw"))
+                || (customId.startsWith("steel_") && customId.endsWith("_raw"))
+                || IronBloomSystem.isRawSteelComponent(source)
+                || IronBloomSystem.isHardenedSteelPiece(source)
+                || IronBloomSystem.isOverTemperedPiece(source)) {
             return;
         }
 

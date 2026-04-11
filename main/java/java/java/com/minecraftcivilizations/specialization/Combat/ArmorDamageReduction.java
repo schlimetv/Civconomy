@@ -52,6 +52,17 @@ public class ArmorDamageReduction {
         double armor = stats.getArmor();
         double toughness = stats.getToughness();
 
+        // Purple tempered steel: count armor points from purple steel pieces
+        double purpleSteelArmor = getPurpleSteelArmorTotal(equipment);
+        boolean hasPurpleSteel = purpleSteelArmor > 0;
+        if (hasPurpleSteel) {
+            if (base_damage <= 8.0) {
+                // Low damage: purple steel provides 150% armor value
+                armor += purpleSteelArmor * 0.5; // adds 50% extra on top of the base
+            }
+            // High damage (>8): 100% armor value — no change needed
+        }
+
         /**
          * Damage Reduction Formula
          */
@@ -200,6 +211,68 @@ public class ArmorDamageReduction {
 //            }
 //        }
 
+    }
+
+    /**
+     * Returns the total armor value contributed by purple tempered steel pieces.
+     * Used to calculate the 150% bonus for low-damage hits.
+     */
+    private double getPurpleSteelArmorTotal(EntityEquipment equipment) {
+        if (equipment == null) return 0;
+        double total = 0;
+        for (ItemStack piece : new ItemStack[]{
+                equipment.getHelmet(), equipment.getChestplate(),
+                equipment.getLeggings(), equipment.getBoots()}) {
+            if (piece == null || !piece.hasItemMeta()) continue;
+            if (!piece.getItemMeta().getPersistentDataContainer().has(
+                    com.minecraftcivilizations.specialization.Listener.Player.Inventories.SmithingAssemblyListener.PURPLE_STEEL_KEY,
+                    org.bukkit.persistence.PersistentDataType.BYTE)) continue;
+            // Sum the armor value from this piece's attribute modifiers
+            var modifiers = piece.getItemMeta().getAttributeModifiers(org.bukkit.attribute.Attribute.ARMOR);
+            if (modifiers != null) {
+                for (var mod : modifiers) {
+                    total += mod.getAmount();
+                }
+            }
+        }
+        return total;
+    }
+
+    /**
+     * Applies 3x durability damage to purple steel armor when hit by high damage (>8).
+     * Called from CombatManager after armor reduction is applied.
+     */
+    public void applyPurpleSteelDurabilityPenalty(LivingEntity victim, double baseDamage) {
+        if (baseDamage <= 8.0) return;
+        EntityEquipment equipment = victim.getEquipment();
+        if (equipment == null) return;
+        for (org.bukkit.inventory.EquipmentSlot slot : new org.bukkit.inventory.EquipmentSlot[]{
+                org.bukkit.inventory.EquipmentSlot.HEAD, org.bukkit.inventory.EquipmentSlot.CHEST,
+                org.bukkit.inventory.EquipmentSlot.LEGS, org.bukkit.inventory.EquipmentSlot.FEET}) {
+            ItemStack piece = equipment.getItem(slot);
+            if (piece == null || !piece.hasItemMeta()) continue;
+            if (!piece.getItemMeta().getPersistentDataContainer().has(
+                    com.minecraftcivilizations.specialization.Listener.Player.Inventories.SmithingAssemblyListener.PURPLE_STEEL_KEY,
+                    org.bukkit.persistence.PersistentDataType.BYTE)) continue;
+            // Apply 2 extra durability damage (3x total = 1 normal + 2 extra)
+            if (piece.getItemMeta() instanceof org.bukkit.inventory.meta.Damageable d) {
+                int maxDmg = d.hasMaxDamage() ? d.getMaxDamage() : 0;
+                if (maxDmg <= 0) continue;
+                int newDmg = d.getDamage() + 2; // +2 on top of the 1 normal durability damage
+                if (newDmg >= maxDmg) {
+                    equipment.setItem(slot, null);
+                    if (victim instanceof org.bukkit.entity.Player p) {
+                        p.playSound(p.getLocation(), org.bukkit.Sound.ENTITY_ITEM_BREAK, 1f, 1f);
+                    }
+                } else {
+                    piece.editMeta(m -> {
+                        if (m instanceof org.bukkit.inventory.meta.Damageable dm) {
+                            dm.setDamage(newDmg);
+                        }
+                    });
+                }
+            }
+        }
     }
 
     /**

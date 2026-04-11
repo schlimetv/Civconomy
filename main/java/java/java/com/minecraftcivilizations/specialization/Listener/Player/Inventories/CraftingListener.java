@@ -2,6 +2,7 @@ package com.minecraftcivilizations.specialization.Listener.Player.Inventories;
 
 import com.google.gson.reflect.TypeToken;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
+import com.minecraftcivilizations.specialization.CustomItem.CustomItem;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
 import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
@@ -33,7 +34,10 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryType;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -544,6 +548,70 @@ public class CraftingListener implements Listener {
         return added;
     }
 
+    // ─── Steel Blueprint Map: steel piece ID → blueprint item ID ───
+    private static final Map<String, String> STEEL_BLUEPRINT_MAP = Map.ofEntries(
+        Map.entry("steel_helm",         "steel_helmet_blueprint"),
+        Map.entry("steel_breastplate",  "steel_chestplate_blueprint"),
+        Map.entry("steel_greaves",      "steel_leggings_blueprint"),
+        Map.entry("steel_sabaton",      "steel_boots_blueprint"),
+        Map.entry("steel_sword_head",   "steel_sword_blueprint"),
+        Map.entry("steel_axe_head",     "steel_axe_blueprint"),
+        Map.entry("steel_pickaxe_head", "steel_pickaxe_blueprint"),
+        Map.entry("steel_hoe_head",     "steel_hoe_blueprint"),
+        Map.entry("steel_shovel_head",  "steel_shovel_blueprint"),
+        Map.entry("steel_hammer_head",  "steel_hammer_blueprint")
+    );
+
+    /**
+     * Steel blueprint crafting: manually detected because hardened/tempered steel pieces
+     * have extra PDC that prevents ExactChoice matching in registered recipes.
+     * Requires: 1 steel piece (hardened) + 1 paper + 1 light blue dye in any arrangement.
+     */
+    @EventHandler(priority = EventPriority.LOW)
+    public void onPrepareSteelBlueprint(PrepareItemCraftEvent event) {
+        if (event.getRecipe() != null) return; // already matched a recipe
+
+        ItemStack[] matrix = event.getInventory().getMatrix();
+        String steelPieceId = null;
+        boolean hasPaper = false;
+        boolean hasDye = false;
+        int itemCount = 0;
+
+        for (ItemStack item : matrix) {
+            if (item == null || item.getType().isAir()) continue;
+            itemCount++;
+            if (item.getType() == Material.PAPER && !hasPaper) { hasPaper = true; continue; }
+            if (item.getType() == Material.LIGHT_BLUE_DYE && !hasDye) { hasDye = true; continue; }
+            if (item.getType() == Material.IRON_INGOT && steelPieceId == null) {
+                CustomItem ci = CustomItemManager.getInstance().getCustomItem(item);
+                if (ci != null && STEEL_BLUEPRINT_MAP.containsKey(ci.getId())) {
+                    steelPieceId = ci.getId();
+                    continue;
+                }
+            }
+            return; // unrecognized item
+        }
+
+        if (itemCount != 3 || steelPieceId == null || !hasPaper || !hasDye) return;
+
+        String bpId = STEEL_BLUEPRINT_MAP.get(steelPieceId);
+        CustomItem bpDef = CustomItemManager.getInstance().getCustomItem(bpId);
+        if (bpDef == null) return;
+
+        // Check skill level
+        Player player = null;
+        for (var viewer : event.getViewers()) {
+            if (viewer instanceof Player p) { player = p; break; }
+        }
+        if (player != null) {
+            NamespacedKey key = new NamespacedKey(
+                com.minecraftcivilizations.specialization.Specialization.getInstance(), bpId);
+            if (shouldBlockRecipe(player, key)) return;
+        }
+
+        event.getInventory().setResult(bpDef.createItemStack());
+    }
+
     @EventHandler(ignoreCancelled = true)
     public void onPrepareItemCraft(PrepareItemCraftEvent event) {
         if (event.getInventory().getViewers().isEmpty()) return;
@@ -699,7 +767,6 @@ public class CraftingListener implements Listener {
             ItemStack item = matrix[i];
             if (item == null || item.getType().isAir()) continue;
             if (CustomItemManager.getInstance().getCustomItem(item) != null) {
-                // Clone the full stack as it exists BEFORE the craft consumes it
                 preserved = item.clone();
                 pieceSlot = i;
                 break;
@@ -711,10 +778,8 @@ public class CraftingListener implements Listener {
         final int slot = pieceSlot;
         final org.bukkit.inventory.CraftingInventory craftInv = event.getInventory();
 
-        // Calculate how many crafts will happen (for the fallback case)
         final int craftCount;
         if (event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
-            // Shift-click: limited by the smallest stack in the matrix
             int min = Integer.MAX_VALUE;
             for (ItemStack m : matrix) {
                 if (m != null && !m.getType().isAir()) {
@@ -727,13 +792,9 @@ public class CraftingListener implements Listener {
         }
 
         Bukkit.getScheduler().runTask(plugin, () -> {
-            // If the player still has the crafting grid open, restore the full stack
             if (player.getOpenInventory().getTopInventory() == craftInv) {
-                // matrix index i → inventory slot i + 1 (slot 0 is the result)
                 craftInv.setItem(slot + 1, pieceToReturn);
             } else {
-                // Grid was closed between ticks — Bukkit already returned the
-                // unconsumed remainder to the player. Only return the consumed portion.
                 ItemStack consumed = pieceToReturn.clone();
                 consumed.setAmount(craftCount);
                 var leftover = player.getInventory().addItem(consumed);
@@ -742,12 +803,60 @@ public class CraftingListener implements Listener {
             }
         });
 
-        // ─── Blueprint XP: 3 LIBRARIAN for bronze, 5 LIBRARIAN for iron ───
+        // ─── Blueprint XP: 3 LIBRARIAN for bronze, 5 for iron ───
         CustomPlayer bpPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance()
                 .getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
         if (bpPlayer != null) {
-            double bpXp = keyName.startsWith("iron_") ? 5.0 : keyName.startsWith("bronze_") ? 3.0 : 0.0;
+            double bpXp = keyName.startsWith("iron_") ? 5.0
+                : keyName.startsWith("bronze_") ? 3.0 : 0.0;
             if (bpXp > 0) bpPlayer.addSkillXp(SkillType.LIBRARIAN, bpXp * craftCount);
+        }
+    }
+
+    /**
+     * Steel blueprint crafting via InventoryClickEvent on result slot.
+     * Since steel blueprints have no registered recipe (ExactChoice can't match
+     * hardened/tempered steel with extra PDC), we handle the click manually:
+     * give the blueprint, consume paper + dye, keep the steel piece.
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onSteelBlueprintTake(InventoryClickEvent event) {
+        if (!(event.getInventory() instanceof org.bukkit.inventory.CraftingInventory craftInv)) return;
+        if (event.getSlotType() != InventoryType.SlotType.RESULT) return;
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        ItemStack result = craftInv.getResult();
+        if (result == null || result.getType().isAir()) return;
+        CustomItem resultCI = CustomItemManager.getInstance().getCustomItem(result);
+        if (resultCI == null || !resultCI.getId().startsWith("steel_") || !resultCI.getId().endsWith("_blueprint")) return;
+
+        // Cancel vanilla handling — we do everything manually
+        event.setCancelled(true);
+
+        // Give blueprint to cursor
+        player.setItemOnCursor(result.clone());
+
+        // Consume 1 paper and 1 dye from the grid, keep the steel piece
+        for (int i = 0; i < craftInv.getMatrix().length; i++) {
+            ItemStack item = craftInv.getItem(i + 1); // +1 because slot 0 is result
+            if (item == null || item.getType().isAir()) continue;
+            if (item.getType() == Material.PAPER || item.getType() == Material.LIGHT_BLUE_DYE) {
+                if (item.getAmount() > 1) {
+                    item.setAmount(item.getAmount() - 1);
+                } else {
+                    craftInv.setItem(i + 1, null);
+                }
+            }
+        }
+
+        // Clear result — will be re-evaluated by onPrepareSteelBlueprint if ingredients remain
+        craftInv.setResult(null);
+
+        // 8 LIBRARIAN XP for steel blueprints
+        CustomPlayer bpPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance()
+                .getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
+        if (bpPlayer != null) {
+            bpPlayer.addSkillXp(SkillType.LIBRARIAN, 8.0);
         }
     }
 

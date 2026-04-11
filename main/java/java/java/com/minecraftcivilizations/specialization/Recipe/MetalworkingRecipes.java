@@ -83,6 +83,18 @@ public class MetalworkingRecipes {
         // ─── Crushed Ores: crafting + smelting (copper, iron, gold) ───
         registerCrushedOres(failedExceptions);
 
+        // ─── Steel System: coal coke, steel blend, pig iron, intermediates ───
+        registerCoalCokeSmelting(failedExceptions);
+        registerSteelBlend(failedExceptions);
+        registerPigIronReheat(failedExceptions);
+        registerSteelCrafting(failedExceptions);
+        registerSteelTempering(failedExceptions);
+
+        // ─── Steel Blueprints & Smithing Assembly ───
+        registerBlueprints("steel", failedExceptions);
+        registerBlueprintArmorSmithing("steel", failedExceptions);
+        registerBlueprintToolSmithing("steel", failedExceptions);
+
         // ─── Iron Bloom System (furnace only, results overridden by IronBloomSystem) ───
         registerIronBloomSmelting(failedExceptions);
 
@@ -648,6 +660,10 @@ public class MetalworkingRecipes {
             String compId = metal + "_" + piece;
             String bpId   = metal + "_" + result + "_blueprint";
 
+            // Steel blueprints are handled manually in CraftingListener.onPrepareItemCraft
+            // because hardened/tempered steel pieces have extra PDC that ExactChoice can't match.
+            if (metal.equals("steel")) continue;
+
             ShapelessRecipe r = new ShapelessRecipe(key(bpId), stack(bpId));
             r.addIngredient(new RecipeChoice.ExactChoice(stack(compId)));
             r.addIngredient(Material.PAPER);
@@ -680,9 +696,10 @@ public class MetalworkingRecipes {
             if (metal.equals("iron")) {
                 result = new ItemStack(Material.valueOf(entry[3]));
                 name   = "iron_" + slot + "_smithing";
-            } else { // bronze
-                result = stack("bronze_" + slot);
-                name   = "bronze_" + slot + "_smithing";
+            } else {
+                // bronze or steel — custom item result
+                result = stack(metal + "_" + slot);
+                name   = metal + "_" + slot + "_smithing";
             }
 
             SmithingTransformRecipe recipe = new SmithingTransformRecipe(
@@ -722,8 +739,9 @@ public class MetalworkingRecipes {
                 result = new ItemStack(Material.valueOf(entry[2]));
                 name   = "iron_" + tool + "_assembly";
             } else {
-                result = stack("bronze_" + tool);
-                name   = "bronze_" + tool + "_assembly";
+                // bronze or steel — custom item result
+                result = stack(metal + "_" + tool);
+                name   = metal + "_" + tool + "_assembly";
             }
 
             SmithingTransformRecipe recipe = new SmithingTransformRecipe(
@@ -833,6 +851,147 @@ public class MetalworkingRecipes {
     }
 
     // ─────────────────────────────────────────────────────────────
+    //  Steel System: coal coke, steel blend, pig iron
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Coal → Coal Coke in regular furnace (40 seconds).
+     * IronBloomSystem overrides the result and blocks blast furnace / re-smelting.
+     */
+    private static void registerCoalCokeSmelting(List<String> failed) {
+        FurnaceRecipe coke = new FurnaceRecipe(
+            key("coal_coke_smelting"),
+            stack("coal_coke"),
+            new RecipeChoice.MaterialChoice(Material.COAL),
+            1.0f,  // 1 vanilla experience point
+            800  // 40 seconds
+        );
+        add(coke, "coal_coke_smelting", failed);
+    }
+
+    /**
+     * Steel Blend crafting (TNT pattern: 5 raw iron + 4 coal coke → 3 steel blend)
+     * and blast furnace smelting (steel blend → pig iron, overridden by IronBloomSystem).
+     */
+    private static void registerSteelBlend(List<String> failed) {
+        // Crafting: 5 raw iron + 4 coal coke in TNT pattern → 3 steel blend
+        ShapedRecipe craft = new ShapedRecipe(key("steel_blend"), stack("steel_blend", 2));
+        craft.shape("RCR", "CRC", "RCR");
+        craft.setIngredient('R', Material.RAW_IRON);
+        craft.setIngredient('C', exact("coal_coke"));
+        add(craft, "steel_blend", failed);
+
+        // Blast furnace: steel blend → pig iron (result overridden by IronBloomSystem)
+        BlastingRecipe blast = new BlastingRecipe(
+            key("steel_blend_smelting"),
+            stack("pig_iron"),
+            new RecipeChoice.ExactChoice(stack("steel_blend")),
+            0.0f,
+            400  // 20 seconds (overridden by FurnaceStartSmeltEvent)
+        );
+        add(blast, "steel_blend_smelting", failed);
+    }
+
+    /**
+     * Smoker recipe for steel tempering. Uses MaterialChoice(IRON_INGOT) so any
+     * hardened steel piece can be placed. IronBloomSystem blocks non-steel items
+     * and handles the lore-based tempering progression.
+     */
+    private static void registerSteelTempering(List<String> failed) {
+        SmokingRecipe temper = new SmokingRecipe(
+            key("steel_tempering"),
+            new ItemStack(Material.IRON_INGOT), // placeholder result — never fires
+            new RecipeChoice.MaterialChoice(Material.IRON_INGOT),
+            0.0f,
+            Integer.MAX_VALUE // never completes — tempering is lore-based
+        );
+        add(temper, "steel_tempering", failed);
+    }
+
+    /**
+     * Pig iron reheat in blast furnace (with coal coke as fuel).
+     * Regular furnace reheat is covered by the iron_bloom_reheat FurnaceRecipe
+     * (MaterialChoice CARROT_ON_A_STICK). Blast furnace needs its own BlastingRecipe.
+     */
+    private static void registerPigIronReheat(List<String> failed) {
+        BlastingRecipe reheat = new BlastingRecipe(
+            key("pig_iron_reheat_blasting"),
+            stack("pig_iron"),
+            new RecipeChoice.MaterialChoice(Material.CARROT_ON_A_STICK),
+            0.0f,
+            160  // overridden by FurnaceStartSmeltEvent
+        );
+        add(reheat, "pig_iron_reheat_blasting", failed);
+    }
+
+    /**
+     * Steel intermediates: plate, plate set, armor pieces, tool heads.
+     * Uses steel_ingot (ExactChoice) instead of vanilla IRON_INGOT to prevent
+     * wrought iron or vanilla iron from substituting.
+     * Follows the same patterns as iron (plate set based, no _raw suffix).
+     */
+    private static void registerSteelCrafting(List<String> failed) {
+        // Steel plates and platesets are made on the anvil (matching iron system):
+        //   heated steel ingot (Orange+) + hammer → armor_plate_steel
+        //   2 heated steel plates (Orange+) → steel_armor_plateset
+
+        // ─── Armor pieces from steel_armor_plateset (produce _raw variants) ───
+        RecipeChoice ps = exact("steel_armor_plateset");
+
+        ShapedRecipe helm = new ShapedRecipe(key("steel_helm_raw"), stack("steel_helm_raw"));
+        helm.shape("PPP", "P P");
+        helm.setIngredient('P', ps);
+        add(helm, "steel_helm_raw", failed);
+
+        ShapedRecipe breast = new ShapedRecipe(key("steel_breastplate_raw"), stack("steel_breastplate_raw"));
+        breast.shape("P P", "PPP", "PPP");
+        breast.setIngredient('P', ps);
+        add(breast, "steel_breastplate_raw", failed);
+
+        ShapedRecipe greaves = new ShapedRecipe(key("steel_greaves_raw"), stack("steel_greaves_raw"));
+        greaves.shape("PPP", "P P", "P P");
+        greaves.setIngredient('P', ps);
+        add(greaves, "steel_greaves_raw", failed);
+
+        ShapedRecipe sabaton = new ShapedRecipe(key("steel_sabaton_raw"), stack("steel_sabaton_raw"));
+        sabaton.shape("P P", "P P");
+        sabaton.setIngredient('P', ps);
+        add(sabaton, "steel_sabaton_raw", failed);
+
+        // ─── Tool heads from steel_armor_plateset (produce _raw variants) ───
+        ShapedRecipe sword = new ShapedRecipe(key("steel_sword_head_raw"), stack("steel_sword_head_raw"));
+        sword.shape("P", "P");
+        sword.setIngredient('P', ps);
+        add(sword, "steel_sword_head_raw", failed);
+
+        ShapedRecipe axe = new ShapedRecipe(key("steel_axe_head_raw"), stack("steel_axe_head_raw"));
+        axe.shape("PP", "P ");
+        axe.setIngredient('P', ps);
+        add(axe, "steel_axe_head_raw", failed);
+
+        ShapedRecipe pick = new ShapedRecipe(key("steel_pickaxe_head_raw"), stack("steel_pickaxe_head_raw"));
+        pick.shape("PPP");
+        pick.setIngredient('P', ps);
+        add(pick, "steel_pickaxe_head_raw", failed);
+
+        ShapedRecipe hoe = new ShapedRecipe(key("steel_hoe_head_raw"), stack("steel_hoe_head_raw"));
+        hoe.shape("PP");
+        hoe.setIngredient('P', ps);
+        add(hoe, "steel_hoe_head_raw", failed);
+
+        ShapedRecipe shovel = new ShapedRecipe(key("steel_shovel_head_raw"), stack("steel_shovel_head_raw"));
+        shovel.shape("P");
+        shovel.setIngredient('P', ps);
+        add(shovel, "steel_shovel_head_raw", failed);
+
+        // ─── Steel hammer head: 4 steel plate sets in 2×2 → raw (needs anvil working) ───
+        ShapedRecipe hammerHead = new ShapedRecipe(key("steel_hammer_head_raw"), stack("steel_hammer_head_raw"));
+        hammerHead.shape("SS", "SS");
+        hammerHead.setIngredient('S', exact("steel_armor_plateset"));
+        add(hammerHead, "steel_hammer_head_raw", failed);
+    }
+
+    // ─────────────────────────────────────────────────────────────
     //  Iron Bloom: initial smelting + reheat
     // ─────────────────────────────────────────────────────────────
 
@@ -897,14 +1056,15 @@ public class MetalworkingRecipes {
         bronzeHead.setIngredient('P', exact("armor_plate_bronze"));
         add(bronzeHead, "bronze_hammer_head", failed);
 
-        // Iron hammer head: 4 iron plate sets (cold) in 2x2
-        ShapedRecipe ironHead = new ShapedRecipe(key("iron_hammer_head"), stack("iron_hammer_head"));
+        // Iron hammer head: 4 iron plate sets (cold) in 2x2 → raw (needs anvil working)
+        ShapedRecipe ironHead = new ShapedRecipe(key("iron_hammer_head_raw"), stack("iron_hammer_head_raw"));
         ironHead.shape("SS", "SS");
         ironHead.setIngredient('S', exact("iron_armor_plateset"));
-        add(ironHead, "iron_hammer_head", failed);
+        add(ironHead, "iron_hammer_head_raw", failed);
     }
 
     private static void registerHammerBlueprints(List<String> failed) {
+        // Steel hammer blueprint handled manually in CraftingListener (same as other steel blueprints)
         for (String metal : new String[]{"bronze", "iron"}) {
             String bpId = metal + "_hammer_blueprint";
             String headId = metal + "_hammer_head";
@@ -918,7 +1078,7 @@ public class MetalworkingRecipes {
     }
 
     private static void registerHammerAssembly(List<String> failed) {
-        for (String metal : new String[]{"bronze", "iron"}) {
+        for (String metal : new String[]{"bronze", "iron", "steel"}) {
             String name = metal + "_hammer_assembly";
 
             SmithingTransformRecipe recipe = new SmithingTransformRecipe(

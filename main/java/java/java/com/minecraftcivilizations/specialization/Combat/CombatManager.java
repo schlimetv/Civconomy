@@ -350,6 +350,8 @@ public class CombatManager implements Listener {
         if(event.getEntity() instanceof LivingEntity le) {
             if(event.isApplicable(ARMOR)) {
                 armorDamageReduction.applyArmorReduction(le, event);
+                // Purple steel: 3x durability damage on high hits (>8 base damage)
+                armorDamageReduction.applyPurpleSteelDurabilityPenalty(le, event.getDamage(EntityDamageEvent.DamageModifier.BASE));
             }
             if(armorBreakSystem != null) {
                 extramsg += " <light_purple>" + armorBreakSystem.breakArmorWithItem(le, event) + "</light_purple>";

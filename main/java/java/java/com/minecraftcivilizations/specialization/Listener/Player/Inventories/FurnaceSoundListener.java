@@ -43,7 +43,7 @@ public class FurnaceSoundListener implements Listener {
     private static final String FIRE_STOP      = "steel:steel.fire.stop";
 
     private static final float VOLUME          = 0.8f;
-    private static final int   FIRE_LOOP_TICKS = 40; // 2 s per clip
+    private static final int   FIRE_LOOP_TICKS = 18; // ~0.9s per furnace fire clip
 
     private final Plugin plugin;
     private final Random random = new Random();
@@ -71,7 +71,6 @@ public class FurnaceSoundListener implements Listener {
         String openSound = (event.getInventory().getType() == InventoryType.BLAST_FURNACE)
             ? "steel:steel.blast_furnace.open"
             : FURNACE_OPEN;
-
         loc.getWorld().playSound(loc.clone().add(0.5, 0.5, 0.5), openSound, SoundCategory.BLOCKS, VOLUME, 1.0f);
     }
 
@@ -126,7 +125,6 @@ public class FurnaceSoundListener implements Listener {
 
                 Block b = blockLoc.getBlock();
                 if (!(b.getState() instanceof Furnace furnace)) {
-                    // Block is no longer a furnace
                     soundLoc.getWorld().playSound(soundLoc, FIRE_STOP, SoundCategory.BLOCKS, VOLUME, 1.0f);
                     cancel();
                     activeFire.remove(key);
@@ -134,14 +132,12 @@ public class FurnaceSoundListener implements Listener {
                 }
 
                 if (furnace.getBurnTime() <= 0) {
-                    // Fuel exhausted — play stop sound and end loop
                     soundLoc.getWorld().playSound(soundLoc, FIRE_STOP, SoundCategory.BLOCKS, VOLUME, 1.0f);
                     cancel();
                     activeFire.remove(key);
                     return;
                 }
 
-                // Still burning — play random fire variant
                 String clip = FIRE_LOOPS[random.nextInt(FIRE_LOOPS.length)];
                 soundLoc.getWorld().playSound(soundLoc, clip, SoundCategory.BLOCKS, VOLUME, 1.0f);
             }

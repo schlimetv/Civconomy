@@ -41,8 +41,23 @@ public class MetalworkingItems {
         new SimpleMetalItem("wrought_iron_ingot", "\u00A77Wrought Iron Ingot", Material.IRON_INGOT);
         new SteelModelItem("bronze_hammer_head", "\u00A76Bronze Hammer Head", Material.GOLD_INGOT);
         new SteelModelItem("iron_hammer_head",   "\u00A77Iron Hammer Head",   Material.IRON_INGOT);
+        new WorkableIronComponent("iron_hammer_head_raw", "\u00A77Iron Hammer Head", 8, "iron_hammer_head");
         new HammerItem("bronze_hammer", "\u00A76Bronze Hammer", 144);
-        new HammerItem("iron_hammer",   "\u00A77Iron Hammer",   216);
+        new HammerItem("iron_hammer",   "\u00A77Iron Hammer",   144);
+
+        // ─── STEEL SYSTEM ───
+        new CoalCokeItem();
+        new SteelBlendItem();
+        new PigIronItem();
+        new SimpleMetalItem("steel_ingot",  "\u00A7bSteel Ingot",  Material.IRON_INGOT);
+        new SteelModelItem("steel_hammer_head", "\u00A7bSteel Hammer Head", Material.IRON_INGOT);
+        new WorkableSteelComponent("steel_hammer_head_raw", "\u00A7bSteel Hammer Head", 4, "steel_hammer_head");
+        new HammerItem("steel_hammer", "\u00A7bSteel Hammer", 144);
+
+        // ─── STEEL (intermediates on IRON_INGOT) ───
+        initMetalIntermediates("steel", Material.IRON_INGOT, "\u00A7b");
+        initSteelWorkables();
+        initSteelFinished();
 
         // ─── COPPER (intermediates on COPPER_INGOT) ───
         initMetalIntermediates("copper", Material.COPPER_INGOT, "§6");
@@ -80,7 +95,7 @@ public class MetalworkingItems {
      * Blueprint IDs are named after the RESULT (e.g. iron_helmet_blueprint, not iron_helm_blueprint).
      */
     private static void initBlueprints() {
-        for (String metal : new String[]{"iron", "bronze"}) {
+        for (String metal : new String[]{"iron", "bronze", "steel"}) {
             String cap = capitalize(metal);
             for (String[] entry : BLUEPRINT_PIECE_MAP) {
                 String result = entry[1];
@@ -172,6 +187,65 @@ public class MetalworkingItems {
 
         @Override
         public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player) {
+        }
+    }
+
+    /**
+     * Coal Coke: COAL base with steel: namespace itemModel.
+     * Smelted from vanilla coal in a regular furnace (40s).
+     * Used exclusively as blast furnace fuel.
+     */
+    private static class CoalCokeItem extends CustomItem {
+        public CoalCokeItem() {
+            super("coal_coke", "\u00A77Coal Coke", Material.COAL, null, 64, true, false);
+        }
+
+        @Override
+        public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player) {
+            itemStack.editMeta(m -> {
+                m.setItemModel(new NamespacedKey("steel", "coal_coke"));
+                m.setMaxStackSize(64);
+            });
+        }
+    }
+
+    /**
+     * Steel Blend: RAW_IRON base with steel: namespace itemModel.
+     * Smelted in blast furnace to produce pig iron.
+     */
+    private static class SteelBlendItem extends CustomItem {
+        public SteelBlendItem() {
+            super("steel_blend", "\u00A78Steel Blend", Material.RAW_IRON, null, 64, true, false);
+        }
+
+        @Override
+        public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player) {
+            itemStack.editMeta(m -> {
+                m.setItemModel(new NamespacedKey("steel", "steel_blend"));
+                m.setMaxStackSize(64);
+            });
+        }
+    }
+
+    /**
+     * Pig Iron: CARROT_ON_A_STICK base with steel: namespace itemModel.
+     * Max damage 25, stack size 1. Worked on anvil with iron/steel hammer.
+     */
+    private static class PigIronItem extends CustomItem {
+        public PigIronItem() {
+            super("pig_iron", "\u00A77Pig Iron", Material.CARROT_ON_A_STICK, null, 1, true, false);
+        }
+
+        @Override
+        public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player) {
+            itemStack.editMeta(m -> {
+                m.setItemModel(new NamespacedKey("steel", "pig_iron"));
+                if (m instanceof org.bukkit.inventory.meta.Damageable d) {
+                    d.setMaxDamage(IronBloomSystem.PIG_IRON_MAX_DAMAGE);
+                    d.setDamage(0);
+                }
+                m.setMaxStackSize(1);
+            });
         }
     }
 
@@ -494,6 +568,44 @@ public class MetalworkingItems {
     }
 
     /**
+     * Registers finished steel armor and tools.
+     * These are the final smithing table outputs. Stats can be adjusted later.
+     * Uses steel: namespace itemModel for custom textures.
+     */
+    private static void initSteelFinished() {
+        // Finished armor (IRON_* base — same as bronze pattern on GOLDEN_* base)
+        new SteelModelItem("steel_helmet",     "\u00A7bSteel Helmet",     Material.IRON_HELMET);
+        new SteelModelItem("steel_chestplate", "\u00A7bSteel Chestplate", Material.IRON_CHESTPLATE);
+        new SteelModelItem("steel_leggings",   "\u00A7bSteel Leggings",   Material.IRON_LEGGINGS);
+        new SteelModelItem("steel_boots",      "\u00A7bSteel Boots",      Material.IRON_BOOTS);
+
+        // Finished tools (IRON_* base)
+        new SteelModelItem("steel_sword",   "\u00A7bSteel Sword",   Material.IRON_SWORD);
+        new SteelModelItem("steel_axe",     "\u00A7bSteel Axe",     Material.IRON_AXE);
+        new SteelModelItem("steel_pickaxe", "\u00A7bSteel Pickaxe", Material.IRON_PICKAXE);
+        new SteelModelItem("steel_hoe",     "\u00A7bSteel Hoe",     Material.IRON_HOE);
+        new SteelModelItem("steel_shovel",  "\u00A7bSteel Shovel",  Material.IRON_SHOVEL);
+    }
+
+    /**
+     * Registers all unworked (raw) steel armor and tool components.
+     * Follows the same pattern as iron: strikes = 2 × plate sets in recipe.
+     */
+    private static void initSteelWorkables() {
+        // Armor components (plateSets used in recipe)
+        new WorkableSteelComponent("steel_helm_raw",         "\u00A7bSteel Helm",         5, "steel_helm");
+        new WorkableSteelComponent("steel_breastplate_raw",  "\u00A7bSteel Breastplate",  8, "steel_breastplate");
+        new WorkableSteelComponent("steel_greaves_raw",      "\u00A7bSteel Greaves",      7, "steel_greaves");
+        new WorkableSteelComponent("steel_sabaton_raw",      "\u00A7bSteel Sabaton",      4, "steel_sabaton");
+        // Tool heads
+        new WorkableSteelComponent("steel_sword_head_raw",   "\u00A7bSteel Sword Head",   2, "steel_sword_head");
+        new WorkableSteelComponent("steel_axe_head_raw",     "\u00A7bSteel Axe Head",     3, "steel_axe_head");
+        new WorkableSteelComponent("steel_pickaxe_head_raw", "\u00A7bSteel Pickaxe Head", 3, "steel_pickaxe_head");
+        new WorkableSteelComponent("steel_hoe_head_raw",     "\u00A7bSteel Hoe Head",     2, "steel_hoe_head");
+        new WorkableSteelComponent("steel_shovel_head_raw",  "\u00A7bSteel Shovel Head",  1, "steel_shovel_head");
+    }
+
+    /**
      * Unworked iron armor / tool component.
      * Shares customModelData with its finished counterpart so it looks identical.
      * Starts at damage = strikesNeeded - 1 (1 durability remaining).
@@ -522,6 +634,40 @@ public class MetalworkingItems {
     }
 
     /**
+     * Unworked steel armor / tool component.
+     * Uses the steel smithing system: heat-variable damage, annealing, quenching.
+     * maxDamage = 2 × plateSets × 6.  Starts with "Annealed" tag.
+     */
+    private static class WorkableSteelComponent extends CustomItem {
+        private final int plateSets;
+
+        public WorkableSteelComponent(String id, String displayName, int plateSets, String modelId) {
+            super(id, displayName, Material.IRON_INGOT, modelId, false);
+            this.plateSets = plateSets;
+        }
+
+        @Override
+        public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player) {
+            final int maxDmg = 2 * plateSets * 6;
+            itemStack.editMeta(m -> {
+                if (m instanceof org.bukkit.inventory.meta.Damageable d) {
+                    d.setMaxDamage(maxDmg);
+                    d.setDamage(maxDmg - 1);  // 1 durability remaining = just formed
+                }
+                m.setMaxStackSize(1);
+                // Grant initial Annealed tag
+                m.getPersistentDataContainer().set(
+                    IronBloomSystem.ANNEALED_KEY,
+                    org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
+                java.util.List<String> lore = m.hasLore() && m.getLore() != null
+                    ? new java.util.ArrayList<>(m.getLore()) : new java.util.ArrayList<>();
+                lore.add("\u00A7aAnnealed");
+                m.setLore(lore);
+            });
+        }
+    }
+
+    /**
      * Item whose model lives under assets/steel/ (NamespacedKey "steel:id").
      * Used for hammer heads and other steel-namespace items.
      */
@@ -532,8 +678,7 @@ public class MetalworkingItems {
 
         @Override
         public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player) {
-            meta.setItemModel(new NamespacedKey("steel", getId()));
-            itemStack.setItemMeta(meta);
+            itemStack.editMeta(m -> m.setItemModel(new NamespacedKey("steel", getId())));
         }
     }
 
