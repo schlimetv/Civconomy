@@ -240,11 +240,15 @@ public final class Specialization extends JavaPlugin {
         Bukkit.getWorlds().forEach(w -> w.setGameRule(GameRule.NATURAL_REGENERATION, false));
         Bukkit.getWorlds().forEach(w -> w.setGameRule(GameRule.DO_TRADER_SPAWNING, false));
 
-        Recipes.init();
-        Blueprints.init();
-        XpGainMonitor.init();
-
-        Bukkit.updateRecipes();
+        try {
+            Recipes.init();
+            Blueprints.init();
+            XpGainMonitor.init();
+            Bukkit.updateRecipes();
+        } catch (Exception e) {
+            logger.severe("[onEnable] Recipe/blueprint init failed — join handlers will still be registered.");
+            e.printStackTrace();
+        }
 
 
         MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().setCustomPlayerClass(CustomPlayer.class);
