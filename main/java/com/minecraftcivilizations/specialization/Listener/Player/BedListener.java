@@ -241,7 +241,7 @@ public class BedListener implements Listener {
     private final Map<UUID, Long> lastHealDay = new HashMap<>();     // MC day index
     private final Map<UUID, Double> healedThisDay = new HashMap<>(); // healed today
 
-    private void startBedHealing(Player player) {
+    private void startBedHealing(Player player, Block bedBlock) {
         UUID id = player.getUniqueId();
         if (bedHealTasks.containsKey(id)) return;
 
@@ -261,10 +261,9 @@ public class BedListener implements Listener {
             return;
         }
         double max = player.getAttribute(Attribute.MAX_HEALTH).getValue();
-        double newHealth = Math.min(player.getHealth() + 1.0, max);
 
         // stop if full HP
-        if (newHealth >= max) return;
+        if (player.getHealth() >= max) return;
 
         // Handle new day reset
         if (storedDay != currentDay) {
@@ -273,8 +272,11 @@ public class BedListener implements Listener {
             healedSoFar = 0.0;
         }
 
-        // Warm campfire requirement
-        if (!hasWarmCampfire(player.getLocation())) {
+        // Warm campfire requirement — check from the bed head position, not the player's
+        // standing position (player hasn't moved to the bed yet at PlayerBedEnterEvent time)
+        Block headBlock = getBedHeadBlock(bedBlock);
+        Location campfireCheckLocation = (headBlock != null ? headBlock : bedBlock).getLocation();
+        if (!hasWarmCampfire(campfireCheckLocation)) {
             double r = Math.random();
 
             String msg;
@@ -332,7 +334,7 @@ public class BedListener implements Listener {
                 // update healed amount
                 healed += 1.0;
                 healedThisDay.put(id, healed);
-                lastHealDay.put(id, currentDay);
+                lastHealDay.put(id, world.getFullTime() / 24000L);
 
 
                 // particle & sound
@@ -428,7 +430,7 @@ public class BedListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBedEnter(PlayerBedEnterEvent event) {
         if (event.getBedEnterResult() != PlayerBedEnterEvent.BedEnterResult.OK) return;
-        startBedHealing(event.getPlayer());
+        startBedHealing(event.getPlayer(), event.getBed());
     }
 
     @EventHandler
