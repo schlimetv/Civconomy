@@ -441,6 +441,14 @@ public class SpecializationConfig {
             fields.add(new Pair<>("DEFAULT_FORMAT", "%s > %s"));
             fields.add(new Pair<>("ANNOUNCEMENT_FORMAT", "<aqua>[Announcement]<gray> %s"));
             fields.add(new Pair<>("ANNOUNCEMENT_PREFIX", "#"));
+            // Join/quit locality (radius in blocks; format uses %s for player name)
+            fields.add(new Pair<>("JOIN_QUIT_RADIUS", 150.0));
+            fields.add(new Pair<>("JOIN_FORMAT", "<gray>[<green>+</green>] <white>%s</white> joined nearby."));
+            fields.add(new Pair<>("QUIT_FORMAT", "<gray>[<red>-</red>] <white>%s</white> left nearby."));
+            // Ship assembly locality — set patterns to substrings found in Saint's Ships messages
+            fields.add(new Pair<>("ASSEMBLY_RADIUS", 150.0));
+            fields.add(new Pair<>("ASSEMBLY_SUCCESS_PATTERN", ""));
+            fields.add(new Pair<>("ASSEMBLY_FAIL_PATTERN", ""));
         });
 
         instinctConfig = new ConfigFile(Specialization.getInstance(), "instinctConfig", null, fields -> {

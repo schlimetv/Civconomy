@@ -66,6 +66,16 @@ public class LocalChat implements Listener {
     private boolean running = false;
 
     // ---- EVENTS ----
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onCommand(PlayerCommandPreprocessEvent e) {
+        String msg = e.getMessage();
+        if (msg.equalsIgnoreCase("/me") || msg.toLowerCase().startsWith("/me ")) {
+            e.setCancelled(true);
+            e.getPlayer().sendRichMessage("<red>The /me command is not available.");
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onChat(AsyncPlayerChatEvent e) {
         Player p = e.getPlayer();

@@ -6,8 +6,10 @@ import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import com.minecraftcivilizations.specialization.Command.EmoteManager;
+import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Specialization;
 import com.minecraftcivilizations.specialization.StaffTools.Debug;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -45,14 +47,17 @@ public class PacketListener extends PacketAdapter {
     @Override
     public void onPacketSending(PacketEvent event) {
 
-        // --- Block sleep messages ---
+        // --- Block sleep messages / filter localized broadcasts ---
         if (event.getPacketType() == PacketType.Play.Server.SYSTEM_CHAT) {
             var comp = event.getPacket().getChatComponents().read(0);
             if (comp != null) {
                 String json = comp.getJson();
-                if (json != null && (json.contains("sleep") || json.contains("Sleeping"))) {
-                    event.setCancelled(true);
-                    return;
+                if (json != null) {
+                    if (json.contains("sleep") || json.contains("Sleeping")) {
+                        event.setCancelled(true);
+                        return;
+                    }
+                    filterShipMessage(event, json);
                 }
             }
         }
@@ -138,6 +143,37 @@ public class PacketListener extends PacketAdapter {
 //        if (custom_item instanceof EmoteItem) {
 //            event.setCancelled(true);
 //        }
+    }
+
+    /**
+     * Cancels a SYSTEM_CHAT packet for a recipient who is beyond ASSEMBLY_RADIUS blocks
+     * from the pilot of the ship that triggered the message. Pilot identity is inferred
+     * by finding the first online player whose name appears in the packet's JSON.
+     * If no matching pilot is found, the packet is cancelled for all recipients.
+     * Patterns are read from chatConfig; an empty pattern string disables that check.
+     */
+    private void filterShipMessage(PacketEvent event, String json) {
+        String successPat = SpecializationConfig.getChatConfig().get("ASSEMBLY_SUCCESS_PATTERN", String.class);
+        String failPat    = SpecializationConfig.getChatConfig().get("ASSEMBLY_FAIL_PATTERN", String.class);
+
+        boolean matches = (!successPat.isEmpty() && json.contains(successPat))
+                       || (!failPat.isEmpty()    && json.contains(failPat));
+        if (!matches) return;
+
+        double radius    = SpecializationConfig.getChatConfig().get("ASSEMBLY_RADIUS", Double.class);
+        Player recipient = event.getPlayer();
+
+        for (Player pilot : Bukkit.getOnlinePlayers()) {
+            if (!json.contains(pilot.getName())) continue;
+            // Guard against cross-world distance() call which throws IllegalArgumentException
+            if (!recipient.getWorld().equals(pilot.getWorld())
+                    || recipient.getLocation().distance(pilot.getLocation()) > radius) {
+                event.setCancelled(true);
+            }
+            return; // stop after first name match
+        }
+        // Pilot not online — cancel for everyone
+        event.setCancelled(true);
     }
 
     @Override
