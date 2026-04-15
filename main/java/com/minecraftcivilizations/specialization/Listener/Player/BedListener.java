@@ -9,7 +9,9 @@ import org.bukkit.block.Block;
 import org.bukkit.block.TileState;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.Bed;
+// Magma blocks, lanterns, lava, lava cauldrons, fire sources
 import org.bukkit.block.data.type.Campfire;
+import org.bukkit.block.data.type.Lantern;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
@@ -414,11 +416,21 @@ public class BedListener implements Listener {
         for (int x = -4; x <= 4; x++) {
             for (int y = -2; y <= 2; y++) {
                 for (int z = -4; z <= 4; z++) {
-
                     Block b = w.getBlockAt(bx + x, by + y, bz + z);
+                    Material type = b.getType();
+                    if (type == Material.MAGMA_BLOCK ||
+                            type == Material.LAVA ||
+                            type == Material.LAVA_CAULDRON ||
+                            type == Material.FIRE ||
+                            type == Material.SOUL_FIRE) {
+                        return true;
+                    }
                     BlockData data = b.getBlockData();
-
-                    if (data instanceof Campfire lit && lit.isLit()) {
+                    if (data instanceof Campfire campfire && campfire.isLit()) {
+                        return true;
+                    }
+                    // Lanterns (covers both regular and soul lanterns)
+                    if (data instanceof Lantern) {
                         return true;
                     }
                 }
