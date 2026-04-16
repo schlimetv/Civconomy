@@ -198,7 +198,7 @@ public class CustomPlayer extends minecraftcivilizations.com.minecraftCivilizati
                 Debug.broadcast("levelup", player.getName()+" <gray>leveled up <yellow>"+skill_name+ "</yellow> to level <green>"+currentLevel);
             } else {
                 player.playSound(player, Sound.ITEM_BOTTLE_FILL_DRAGONBREATH, 100F, 1.5F);
-                PlayerUtil.message(player, LoreUtils.createLoreLine("Your " + skill_name + "ing ability has deteriorated, you are now " + SkillType.getDisplayName(skillType) + " " + SkillLevel.getDisplayName(currentLevel), NamedTextColor.WHITE));
+                PlayerUtil.message(player, LoreUtils.createLoreLine("Your " + SkillType.getClassVerb(skillType) + " ability has deteriorated, you are now " + SkillType.getDisplayName(skillType) + " " + SkillLevel.getDisplayName(currentLevel), NamedTextColor.WHITE));
             }
             while (currentLevel > 0) {
                 Set<NamespacedKey> recipes =

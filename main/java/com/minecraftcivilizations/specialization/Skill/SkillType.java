@@ -43,5 +43,16 @@ public enum SkillType {
         return StringUtils.capitalize(skillType.name().toLowerCase());
     }
 
-
+    // CustomPlayer.java addSkillXP()
+    public static String getClassVerb(SkillType skillType) {
+        return switch (skillType) {
+            case FARMER -> "Farming";
+            case BUILDER -> "Building";
+            case MINER -> "Mining";
+            case HEALER -> "Healing";
+            case LIBRARIAN -> "Researching"; // Or "Scribing"
+            case GUARDSMAN -> "Guarding";
+            case BLACKSMITH -> "Smithing";
+        };
+    }
 }
