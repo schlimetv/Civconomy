@@ -78,8 +78,6 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-//testing
-
 public final class Specialization extends JavaPlugin {
 
     public final static String TITLE = "<#334422>[<#445533>CivLabs</#445533>]";
