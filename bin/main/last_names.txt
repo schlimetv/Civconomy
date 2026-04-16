@@ -1,0 +1,189 @@
+#A last name with a group tag can only be used if the first name that was rolled uses that group tag.
+#This acts as a way to filter and restrict certain combinations.
+
+#Groups look like this: [group] [group_example]
+#Each line has an equal chance of being rolled. However, names inside groups become rarer because of this.
+# (MATERIAL) is used for intrinsic armor trim materials for blacksmiths
+
+#Authors: Jfrogy, Alectriciti + Community <3
+
+#groups -
+# Soft
+{Meadow|Weave|Padding} [Soft] (AMETHYST)
+{Hug|Cloud|Jello|Bed} [Soft] (AMETHYST)
+{Pillow|Linen|Down} [Soft] (QUARTZ)
+{Petal|Bud|Blossom} [Soft] (AMETHYST)
+{Velvet|Moss|Fur} [Soft] (AMETHYST)
+{Silk|Satin|Thread} [Soft] [Sound] (QUARTZ)
+
+# Dark
+{Ebon|Obscura|Murk} [Dark] [Light] (NETHERITE)
+{Shroud|Gloom|Dusk} [Dark] [Light] (NETHERITE)
+{Chasm|Void|Shadow} [Dark] [Light] [Visual] [Time] [Soft] [Sound] (NETHERITE)
+{Dimness|Twilight|Nightfall} [Dark] (NETHERITE)
+{Coal} [Dark] [Light] (NETHERITE)
+{Gloaming|Hollow|Shade} [Dark] [Light] [Soft] (NETHERITE)
+{Grim|Clown|Jester} [Dark] [Light] [Soft] (AMETHYST)
+
+# Light
+{Sunbeam|Aurora|Halo} [Light] [Dark] [Time] [Soft] [Sound] (GOLD)
+{Spark|Flash|Radiance} [Light] [Dark] (GOLD)
+{Glow|Twinkle|Glint} [Light] [Dark] [Soft] (GOLD)
+{Illume|Flicker|Beam} [Light] [Dark] (GOLD)
+{Aether|Sky|Radiant} [Light] [Dark] [Soft] (QUARTZ)
+{Prism|Shine|Lumina} [Light] [Dark] [Soft] (QUARTZ)
+
+# Fire
+{Flame|Spark|Cinder} [Fire] [Cold] [Dark] (RESIN)
+{Smoulder|Blaze|Kindle} [Fire] [Cold] (COPPER)
+{Ash|Flicker|Torch} [Fire] [Cold] (RESIN)
+{Inferno|Pyre|Combust} [Fire] [Cold] [Dark] (REDSTONE)
+{Ember|Ignite|Sear} [Fire] [Cold] (RESIN)
+{Sparks|Burn|Flare} [Fire] [Cold] [Dark] (RESIN)
+
+# Cold
+{Frost|Icicle|Glaze} [Cold] [Fire] (DIAMOND)
+{Glacier|Shard|Frigid} [Cold] [Fire] (DIAMOND)
+{Snow|Hail|Blizzard} [Cold] [Fire] (QUARTZ)
+{Ice|Permafrost|Freeze} [Cold] [Fire] (DIAMOND)
+{Biting|Gelid|Bleak} [Cold] [Fire] (IRON)
+{Chill|Shiver|Crystalline} [Cold] [Fire] (DIAMOND)
+
+# Motion
+{Wave|Drift|Curl} [Motion] [Sound] (IRON)
+{Eddy|Flow|Twist} [Motion] [Sound] (IRON)
+{Whirl|Surge|Glide} [Motion] [Sound] (IRON)
+{Torrent|Cascade|Rush} [Motion] [Sound] (IRON)
+{Spiral|Undulation|Shift} [Motion] [Sound] (IRON)
+{Current|Slide|Ripple} [Motion] [Sound] (IRON)
+
+# Sound
+{Chime|Tone|Ring} [Sound] (IRON)
+{Clang|Boom|Peal} [Sound] (IRON)
+{Resonance|Hum|Echo} [Sound] [Time] (AMETHYST)
+{Call|Rumble|Fanfare} [Sound] (IRON)
+{Toll|Clatter|Racket} [Sound] (IRON)
+{Vibration|Pulse|Reverberation} [Sound] (IRON)
+{Lyric|Tune|Melody} [Mellow] [Sound] (AMETHYST)
+
+# Time
+{Moment|Phase|Tick} [Time] [Sound] (RANDOM)
+{Eon|Continuum|Epoch} [Time] [Sound] (IRON)
+{Cycle|Span|Origin} [Time] [Sound] (QUARTZ)
+{Dusk|Sunset} [Time] [Sound] [Visual] [Soft] [Cold] (COPPER)
+{Fleeting|Transient|Ephemeral} [Time] [Sound] (RANDOM)
+{Endless|Perpetual|Infinity} [Time] [Sound] [Cold] (RANDOM)
+
+# Air
+{Breeze|Draft|Flurry} [Air] [Visual] [Soft] [Cold] (QUARTZ)
+{Wind|Current} [Air] (QUARTZ)
+{Mist|Fog|Wisp} [Air] (LAPIS)
+{Whirl|Vortex} [Air] [Visual] (QUARTZ)
+{Cyclone|Twist|Swirl} [Air] [Time] (QUARTZ)
+{Float|Billow|Lift} [Air] (QUARTZ)
+
+# Space
+{Orbit|Sky} [Space] [Dark] (LAPIS)
+{Void|Vast|Ecliptic} [Space] [Dark] (NETHERITE)
+{Horizon|Expanse|Reach} [Space] [Dark] (NETHERITE)
+{Celestial|Astral|Ethereal|Aether} [Space] [Soft] [Light] (QUARTZ)
+{Galaxy|Continuum|Infinity} [Space] [Time] [Sound] [Visual] [Soft] [Cold] (AMETHYST)
+
+# Visual
+{Gleam|Shimmer|Flash} [Visual] [Light] (QUARTZ)
+{Sunshine|Sunrise|Sunset} [Visual] [Light] [Dark] (GOLD)
+{Shadow|Dim|Shade} [Visual] [Light] (NETHERITE)
+{Radiance|Glint|Sparkle} [Visual] [Soft] (GOLD)
+{Twinkle|Flicker|Lumina} [Visual] [Light] (AMETHYST)
+
+# Meadow
+{Cat|Bee|Flower} [Plains] (GOLD)
+{Bug|Cricket|Frog|Turtle} [Plains] (EMERALD)
+{Deer|Hare|Lark|Finch} [Plains] (EMERALD)
+{Butterfly|Fox|Moth|Sparrow|Breeze} [Plains] (IRON)
+{Mouse|Ant|Snake|Hedgehog} [Plains] (IRON)
+{Grasshopper|Beetle|Wasp|Firefly} [Plains] (EMERALD)
+{Wind|Petal|Willow|Seed} [Plains] (EMERALD)
+{Thistle|Clover|Fern|Reed} [Plains] (EMERALD)
+{Stream|Pond} [Plains] (LAPIS)
+{Sun|Mist|Shadow|Light} [Plains] (QUARTZ)
+{Cloud|Rain|Dew|Storm} [Plains] (EMERALD)
+{Echo|Song|Whisper|Drift} [Plains] (EMERALD)
+{Trail|Hill} [Plains] (COPPER)
+{Stone|Feather|Root|Twig} [Plains] (EMERALD)
+{Glow|Dust|Shade|Horizon} [Plains] (GOLD)
+
+# Mellow
+{Sunshine|name} [Mellow] (GOLD)
+{Serenity|Concord} [Mellow] [Soft] (AMETHYST)
+
+# Old
+{Ruin|Tomb|Fossil} [Old] [Time] (IRON)
+{Obelisk|Amber|Rock} [Rock] [Light] [Dark] (NETHERITE)
+
+# Forest
+{Maple|Hazel} [Forest] (EMERALD)
+{Willow|Twig|Branch} [Forest] (EMERALD)
+
+#defualt -
+Echo (LAPIS)
+Flame (RESIN)
+Spirit (QUARTZ)
+Ember (RESIN)
+Ender (EMERALD)
+Warden (LAPIS)
+Soul (QUARTZ)
+Rose (REDSTONE)
+Portal (AMETHYST)
+Beacon (COPPER)
+Frost (DIAMOND)
+Bloom (GOLD)
+Specter (IRON)
+Whisper (NETHERITE)
+Dream (AMETHYST)
+Rift (IRON)
+Abyss (NETHERITE)
+Phantom (LAPIS)
+Slumber (NETHERITE)
+Eclipse (NETHERITE)
+Dawn (GOLD)
+Twilight (AMETHYST)
+Cavern (COPPER)
+Breeze (QUARTZ)
+Spark (REDSTONE)
+Void (NETHERITE)
+Star (QUARTZ)
+Moon (IRON)
+Sun (RESIN)
+Tide (LAPIS)
+Root (COPPER)
+Heart (REDSTONE)
+Horizon (LAPIS)
+Pearl (AMETHYST)
+Depth (COPPER)
+Light (QUARTZ)
+Grave (COPPER)
+Cinder (RESIN)
+Crown (GOLD)
+Dust (IRON)
+Memory (AMETHYST)
+Frog (EMERALD)
+Creeper (EMERALD)
+Dirt (COPPER)
+Diamond (DIAMOND)
+Ruler (GOLD)
+Oath (IRON)
+Rain (LAPIS)
+Sky (QUARTZ)
+Forest (EMERALD)
+Treasure (GOLD)
+Bliss (LAPIS)
+Night (NETHERITE)
+Goober (IRON)
+Coffee (COPPER)
+Path (EMERALD)
+Arrow (IRON)
+Eye (IRON)
+World (EMERALD)
+Storm (GOLD)
+Rush (IRON)
