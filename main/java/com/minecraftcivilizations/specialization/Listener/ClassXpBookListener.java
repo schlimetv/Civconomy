@@ -8,6 +8,7 @@ import com.minecraftcivilizations.specialization.util.PlayerUtil;
 import org.bukkit.Bukkit;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -67,7 +68,7 @@ public class ClassXpBookListener implements Listener {
 
         ItemStack result = new ItemStack(Material.WRITABLE_BOOK);
         result.editMeta(BookMeta.class, m -> {
-            m.displayName(Component.text("Class XP Book").color(NamedTextColor.AQUA));
+            m.displayName(Component.text("Class XP Book").color(NamedTextColor.AQUA).decoration(TextDecoration.ITALIC, false));
             m.lore(List.of(
                     Component.text("Capacity: " + capacity + " CXP").color(NamedTextColor.GRAY),
                     Component.text("Write a class name and sign to seal CXP.").color(NamedTextColor.DARK_AQUA),
@@ -106,7 +107,7 @@ public class ClassXpBookListener implements Listener {
             return;
         }
 
-        String classNameRaw = split[1].strip().toUpperCase();
+        String classNameRaw = split[1].replaceAll("§[0-9a-fk-orA-FK-OR]", "").strip().toUpperCase();
 
         SkillType skillType;
         try {
@@ -138,7 +139,7 @@ public class ClassXpBookListener implements Listener {
             ItemStack filledBook = new ItemStack(Material.BOOK);
             filledBook.editMeta(m -> {
                 m.displayName(Component.text("Class XP: " + SkillType.getDisplayName(finalSkill)
-                        + " (" + finalCapacity + ")").color(NamedTextColor.LIGHT_PURPLE));
+                        + " (" + finalCapacity + ")").color(NamedTextColor.LIGHT_PURPLE).decoration(TextDecoration.ITALIC, false));
                 m.lore(List.of(
                         Component.text("Class: " + SkillType.getDisplayName(finalSkill)).color(NamedTextColor.GRAY),
                         Component.text("Contains " + finalCapacity + " CXP").color(NamedTextColor.DARK_AQUA),

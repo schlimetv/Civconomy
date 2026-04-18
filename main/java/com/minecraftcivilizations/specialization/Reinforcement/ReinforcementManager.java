@@ -201,10 +201,16 @@ public class ReinforcementManager {
      */
     public static ReinforcementTier getHeldReinforcementTier(Player player) {
         if (player == null) return null;
-        Material type = player.getInventory().getItemInMainHand().getType();
-        if (type == Material.STICK)        return ReinforcementTier.WOODEN;
-        if (type == Material.COPPER_INGOT) return ReinforcementTier.LIGHT;
-        if (type == Material.IRON_INGOT)   return ReinforcementTier.HEAVY;
+        var item = player.getInventory().getItemInMainHand();
+        Material type = item.getType();
+        var pdc = item.hasItemMeta() ? item.getItemMeta().getPersistentDataContainer() : null;
+        boolean isCustom = pdc != null && pdc.has(new NamespacedKey("specialization", "custom_item_id"), PersistentDataType.STRING);
+
+        if (type == Material.STICK && !isCustom)        return ReinforcementTier.WOODEN;
+        if (type == Material.COPPER_INGOT && !isCustom) return ReinforcementTier.LIGHT;
+        if (type == Material.IRON_INGOT && isCustom
+                && "wrought_iron_ingot".equals(pdc.get(new NamespacedKey("specialization", "custom_item_id"), PersistentDataType.STRING)))
+            return ReinforcementTier.HEAVY;
         return null;
     }
 

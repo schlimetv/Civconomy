@@ -25,6 +25,7 @@ import org.bukkit.persistence.PersistentDataType;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import static com.minecraftcivilizations.specialization.util.MathUtils.*;
 
 import java.util.*;
@@ -93,7 +94,7 @@ public class XpTransferBookListener implements Listener {
             int librarianLevel = cp.getSkillLevel(SkillType.LIBRARIAN);
             int maxLevels = 3 * librarianLevel;
 
-            book_meta.displayName(Component.text("XP Transfer Book").color(NamedTextColor.AQUA));
+            book_meta.displayName(Component.text("XP Transfer Book").color(NamedTextColor.AQUA).decoration(TextDecoration.ITALIC, false));
             book_meta.lore(List.of(
                     Component.text("Crafted by " + player.getName()).color(NamedTextColor.GRAY),
                     Component.text("Write an amount and sign to store XP.").color(NamedTextColor.DARK_AQUA),
@@ -173,7 +174,7 @@ public class XpTransferBookListener implements Listener {
         if(page_split.length<2){
             return;
         }
-        String number_string = page_split[1].strip();
+        String number_string = page_split[1].replaceAll("§[0-9a-fk-orA-FK-OR]", "").strip();
         int requestedLevels;
         try{
             requestedLevels = Math.max(0, Integer.valueOf(number_string));
@@ -200,7 +201,7 @@ public class XpTransferBookListener implements Listener {
         }
 
         // this temporarily stores the metadata to be transfered into the new book meta later
-        meta.displayName(Component.text("Tome of Knowledge with " + totalXp + " XP").color(NamedTextColor.AQUA));
+        meta.displayName(Component.text("Tome of Knowledge with " + totalXp + " XP").color(NamedTextColor.AQUA).decoration(TextDecoration.ITALIC, false));
 
         player.setTotalExperience(targetXp);
         player.setLevel(playerLevel - requestedLevels);
