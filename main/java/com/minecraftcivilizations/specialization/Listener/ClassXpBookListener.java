@@ -34,6 +34,7 @@ public class ClassXpBookListener implements Listener {
     private static NamespacedKey CLASS_XP_BOOK_CAPACITY_KEY;
     private static NamespacedKey CLASS_XP_BOOK_STORED_XP_KEY;
     private static NamespacedKey CLASS_XP_BOOK_SKILL_KEY;
+    private static NamespacedKey CLASS_XP_BOOK_TAX_KEY;
 
     // recipe key → capacity (e.g. class_xp_book_500 → 500)
     private static final Map<NamespacedKey, Integer> RECIPE_CAPACITIES = new LinkedHashMap<>();
@@ -43,8 +44,10 @@ public class ClassXpBookListener implements Listener {
         CLASS_XP_BOOK_CAPACITY_KEY  = new NamespacedKey(plugin, "class_xp_book_capacity");
         CLASS_XP_BOOK_STORED_XP_KEY = new NamespacedKey(plugin, "class_xp_book_stored_xp");
         CLASS_XP_BOOK_SKILL_KEY     = new NamespacedKey(plugin, "class_xp_book_skill");
+        CLASS_XP_BOOK_TAX_KEY       = new NamespacedKey(plugin, "class_xp_book_tax");
 
-        int[] capacities = {500, 1000, 2000, 4000};
+        int[] capacities    = {200, 500, 1000, 1500};
+        int[] emeraldCounts = {2,   4,   6,    8};
         for (int i = 0; i < capacities.length; i++) {
             int cap = capacities[i];
             NamespacedKey key = new NamespacedKey(plugin, "class_xp_book_" + cap);
@@ -52,7 +55,7 @@ public class ClassXpBookListener implements Listener {
 
             ShapelessRecipe recipe = new ShapelessRecipe(key, new ItemStack(Material.WRITABLE_BOOK));
             recipe.addIngredient(Material.WRITABLE_BOOK);
-            for (int j = 0; j <= i; j++) {
+            for (int j = 0; j < emeraldCounts[i]; j++) {
                 recipe.addIngredient(Material.EMERALD);
             }
             Bukkit.addRecipe(recipe);
@@ -66,17 +69,25 @@ public class ClassXpBookListener implements Listener {
         Integer capacity = RECIPE_CAPACITIES.get(sr.getKey());
         if (capacity == null) return;
 
+        Player player = (Player) event.getView().getPlayer();
+        CustomPlayer cp = CoreUtil.getPlayer(player.getUniqueId());
+        int libLevel = cp != null ? cp.getSkillLevel(SkillType.LIBRARIAN) : 2;
+        double tax = getTaxRate(libLevel);
+        String taxDisplay = formatTaxPercent(tax);
+
         ItemStack result = new ItemStack(Material.WRITABLE_BOOK);
         result.editMeta(BookMeta.class, m -> {
             m.displayName(Component.text("Class XP Book").color(NamedTextColor.AQUA).decoration(TextDecoration.ITALIC, false));
             m.lore(List.of(
                     Component.text("Capacity: " + capacity + " CXP").color(NamedTextColor.GRAY),
+                    Component.text(taxDisplay + "% XP transfer penalty").color(NamedTextColor.RED),
                     Component.text("Write a class name and sign to seal CXP.").color(NamedTextColor.DARK_AQUA),
                     Component.text("Irreversible!").color(NamedTextColor.DARK_RED)
             ));
             m.addPage(buildBookTemplate(capacity));
             m.setEnchantmentGlintOverride(true);
             m.getPersistentDataContainer().set(CLASS_XP_BOOK_CAPACITY_KEY, PersistentDataType.INTEGER, capacity);
+            m.getPersistentDataContainer().set(CLASS_XP_BOOK_TAX_KEY, PersistentDataType.DOUBLE, tax);
         });
         event.getInventory().setResult(result);
     }
@@ -87,9 +98,12 @@ public class ClassXpBookListener implements Listener {
         ItemStack book = player.getInventory().getItemInMainHand();
         if (book.getType() != Material.WRITABLE_BOOK || !book.hasItemMeta()) return;
 
-        Integer capacity = book.getItemMeta().getPersistentDataContainer()
-                .get(CLASS_XP_BOOK_CAPACITY_KEY, PersistentDataType.INTEGER);
+        var bookPdc = book.getItemMeta().getPersistentDataContainer();
+        Integer capacity = bookPdc.get(CLASS_XP_BOOK_CAPACITY_KEY, PersistentDataType.INTEGER);
         if (capacity == null) return;
+
+        Double tax = bookPdc.get(CLASS_XP_BOOK_TAX_KEY, PersistentDataType.DOUBLE);
+        if (tax == null) tax = 0.5;
 
         event.setCancelled(true); // prevent vanilla written_book creation
         if (!event.isSigning()) return;
@@ -121,15 +135,16 @@ public class ClassXpBookListener implements Listener {
         CustomPlayer cp = CoreUtil.getPlayer(player.getUniqueId());
         if (cp == null) return;
 
+        int totalCost = (int) Math.ceil(capacity * (1 + tax));
         double currentXp = cp.getSkill(skillType).getXp();
-        if (currentXp < capacity) {
+        if (currentXp < totalCost) {
             PlayerUtil.message(player, "<red>Not enough " + SkillType.getDisplayName(skillType)
-                    + " XP. You have " + (int) currentXp + " but need " + capacity + ".");
+                    + " XP. You have " + (int) currentXp + " but need " + totalCost + ".");
             return;
         }
 
-        // Deduct CXP and seal the book
-        cp.addSkillXp(skillType, -capacity, null, true, false);
+        // Deduct total cost (capacity + tax) but book stores only the capacity
+        cp.addSkillXp(skillType, -totalCost, null, true, false);
 
         final SkillType finalSkill = skillType;
         final int finalCapacity = capacity;
@@ -190,6 +205,21 @@ public class ClassXpBookListener implements Listener {
 
         cp.addSkillXp(skillType, storedXp);
         item.setAmount(item.getAmount() - 1);
+    }
+
+    private static double getTaxRate(int librarianLevel) {
+        if (librarianLevel >= 5) return 0.125;
+        return switch (librarianLevel) {
+            case 4 -> 0.25;
+            case 3 -> 0.375;
+            default -> 0.50;
+        };
+    }
+
+    private static String formatTaxPercent(double tax) {
+        double percent = tax * 100;
+        if (percent == (int) percent) return String.valueOf((int) percent);
+        return String.valueOf(percent);
     }
 
     private static String buildBookTemplate(int capacity) {

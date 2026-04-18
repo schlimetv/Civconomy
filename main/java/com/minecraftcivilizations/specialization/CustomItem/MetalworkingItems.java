@@ -49,13 +49,23 @@ public class MetalworkingItems {
         new CoalCokeItem();
         new SteelBlendItem();
         new PigIronItem();
-        new SimpleMetalItem("steel_ingot",  "\u00A7bSteel Ingot",  Material.IRON_INGOT);
+        new SteelModelItem("steel_ingot",  "\u00A7bSteel Ingot",  Material.IRON_INGOT);
         new SteelModelItem("steel_hammer_head", "\u00A7bSteel Hammer Head", Material.IRON_INGOT);
         new WorkableSteelComponent("steel_hammer_head_raw", "\u00A7bSteel Hammer Head", 4, "steel_hammer_head");
         new HammerItem("steel_hammer", "\u00A7bSteel Hammer", 144);
 
-        // ─── STEEL (intermediates on IRON_INGOT) ───
-        initMetalIntermediates("steel", Material.IRON_INGOT, "\u00A7b");
+        // ─── STEEL (intermediates on IRON_INGOT, using itemModel → steel: namespace) ───
+        new SteelModelItem("armor_plate_steel",    "\u00A7bSteel Plate",     Material.IRON_INGOT);
+        new SteelModelItem("steel_armor_plateset", "\u00A7bSteel Plate Set", Material.IRON_INGOT);
+        new SteelModelItem("steel_helm",        "\u00A7bSteel Helm",        Material.IRON_INGOT);
+        new SteelModelItem("steel_breastplate", "\u00A7bSteel Breastplate", Material.IRON_INGOT);
+        new SteelModelItem("steel_greaves",     "\u00A7bSteel Greaves",     Material.IRON_INGOT);
+        new SteelModelItem("steel_sabaton",     "\u00A7bSteel Sabaton",     Material.IRON_INGOT);
+        new SteelModelItem("steel_sword_head",   "\u00A7bSteel Sword Head",   Material.IRON_INGOT);
+        new SteelModelItem("steel_axe_head",     "\u00A7bSteel Axe Head",     Material.IRON_INGOT);
+        new SteelModelItem("steel_pickaxe_head", "\u00A7bSteel Pickaxe Head", Material.IRON_INGOT);
+        new SteelModelItem("steel_hoe_head",     "\u00A7bSteel Hoe Head",     Material.IRON_INGOT);
+        new SteelModelItem("steel_shovel_head",  "\u00A7bSteel Shovel Head",  Material.IRON_INGOT);
         initSteelWorkables();
         initSteelFinished();
 
@@ -640,22 +650,24 @@ public class MetalworkingItems {
      */
     private static class WorkableSteelComponent extends CustomItem {
         private final int plateSets;
+        private final String modelId;
 
         public WorkableSteelComponent(String id, String displayName, int plateSets, String modelId) {
-            super(id, displayName, Material.IRON_INGOT, modelId, false);
+            super(id, displayName, Material.IRON_INGOT, null, -1, true, false);
             this.plateSets = plateSets;
+            this.modelId = modelId;
         }
 
         @Override
         public void onCreateItem(ItemStack itemStack, ItemMeta meta, Player player) {
             final int maxDmg = 2 * plateSets * 6;
             itemStack.editMeta(m -> {
+                m.setItemModel(new NamespacedKey("steel", modelId));
                 if (m instanceof org.bukkit.inventory.meta.Damageable d) {
                     d.setMaxDamage(maxDmg);
                     d.setDamage(maxDmg - 1);  // 1 durability remaining = just formed
                 }
                 m.setMaxStackSize(1);
-                // Grant initial Annealed tag
                 m.getPersistentDataContainer().set(
                     IronBloomSystem.ANNEALED_KEY,
                     org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
