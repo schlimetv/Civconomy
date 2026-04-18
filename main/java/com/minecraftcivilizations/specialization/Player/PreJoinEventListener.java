@@ -54,7 +54,6 @@ public class PreJoinEventListener implements Listener {
         String fmt    = SpecializationConfig.getChatConfig().get("JOIN_FORMAT", String.class);
         Component msg = MiniMessage.miniMessage().deserialize(fmt.formatted(player.getName()));
         player.getLocation().getNearbyPlayers(radius).forEach(near -> near.sendMessage(msg));
-        player.sendMessage(msg);
     }
 
     @EventHandler
