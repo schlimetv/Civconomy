@@ -32,25 +32,39 @@ public class ClassGUI extends GUI {
         super(Component.text("Your Specialization Stats"), 54);
     }
 
+    // Default open method (for self-viewing)
     @Override
     public void open(Player player) {
-        CustomPlayer customPlayer = CoreUtil.getPlayer(player);
+        open(player, player); // Just calls the new method with the player as both viewer and target
+    }
+
+    // New overloaded method for viewing others
+    public void open(Player viewer, Player target) {
+        CustomPlayer targetData = CoreUtil.getPlayer(target);
         this.getItems().clear();
 
-        if(customPlayer == null) return;
+        if (targetData == null) return;
 
-        if (customPlayer.isAdvancedClassesGUIEnabled()) {
-            advancedClassGUI(customPlayer);
+        // Logic based on the TARGET'S data
+        if (targetData.isAdvancedClassesGUIEnabled()) {
+            advancedClassGUI(targetData);
         } else {
-            defaultClassGUI(customPlayer);
+            defaultClassGUI(targetData);
         }
 
-        this.getItems().put(4, makeUserItem(customPlayer.getName()));
-        this.getItems().put(45, makeRecipesItem(player));
-        this.getItems().put(53, makeSettingsItem(player));
+        // GUI Icons
+        this.getItems().put(4, makeUserItem(targetData.getName()));
 
-        player.openInventory(Bukkit.createInventory(player, 54));
-        super.open(player);
+        // Settings/Recipes usually apply to the VIEWER,
+        // so we use 'viewer' here so they can click their own settings.
+        this.getItems().put(45, makeRecipesItem(viewer));
+        this.getItems().put(53, makeSettingsItem(viewer));
+
+        // Open the inventory for the VIEWER
+        // Note: You might want to update the inventory title to show the target's name
+        viewer.openInventory(Bukkit.createInventory(viewer, 54, Component.text(target.getName() + "'s Stats")));
+
+        super.open(viewer);
     }
 
     private GUIItem makeSettingsItem(Player player){
