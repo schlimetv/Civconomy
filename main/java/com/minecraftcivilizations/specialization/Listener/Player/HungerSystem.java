@@ -9,10 +9,7 @@ import com.minecraftcivilizations.specialization.StaffTools.Debug;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
 import com.minecraftcivilizations.specialization.util.ItemStackUtils;
 import com.minecraftcivilizations.specialization.util.PlayerUtil;
-import org.bukkit.GameMode;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
-import org.bukkit.SoundCategory;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -24,6 +21,9 @@ import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.inventory.meta.SuspiciousStewMeta;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -214,7 +214,7 @@ public class HungerSystem implements Listener {
 
 
     /**
-     * force feed players as guardsmen
+     * force-feed players as guardsmen or healer
      */
     @EventHandler(priority = EventPriority.HIGH)
     public void onRightClickPlayer(PlayerInteractEntityEvent event) {
@@ -257,12 +257,57 @@ public class HungerSystem implements Listener {
                 0,
                 held
         );
+
+        // Apply potion effects of food
+        Material material = handItem.getType();
+
+        switch (material) {
+            case ROTTEN_FLESH -> {
+                // 80% chance of Hunger for 30 seconds
+                if (Math.random() < 0.8) {
+                    target.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER, 600, 0));
+                    notifyPlayerBeingForceFed(player, target);
+                }
+            }
+            case SPIDER_EYE -> {
+                // 100% chance of Poison for 5 seconds
+                target.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 100, 0));
+                notifyPlayerBeingForceFed(player, target);
+            }
+            case CHICKEN -> {
+                // 30% chance of Hunger for 30 seconds
+                if (Math.random() < 0.3) {
+                    target.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER, 600, 0));
+                    notifyPlayerBeingForceFed(player, target);
+                }
+            }
+            case PUFFERFISH -> {
+                // Hunger III (15s), Nausea II (15s), Poison IV (15s)
+                target.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER, 300, 2));
+                target.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 300, 1));
+                target.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 300, 3));
+                notifyPlayerBeingForceFed(player, target);
+            }
+            case SUSPICIOUS_STEW -> {
+                // Extracts effects stored in the stew's Meta
+                if (handItem.getItemMeta() instanceof SuspiciousStewMeta stewMeta) {
+                    for (PotionEffect effect : stewMeta.getCustomEffects()) {
+                        target.addPotionEffect(effect);
+                    }
+                    notifyPlayerBeingForceFed(player, target);
+                }
+            }
+            default -> { /* No effects for standard food */ }
+        }
+
         // Consume one item from hand
         handItem.setAmount(handItem.getAmount() - 1);
         PlayerUtil.setCooldown(player, "feedother", 4);
 //        PlayerUtil.message(player, "Force fed <gold>" + target.getName(), 1);
-//        PlayerUtil.message(target, "<gold>" + target.getName() + "</gold>force fed you", 1);
+//        PlayerUtil.message(target, "<gold>" + target.getName() + "</gold>force fed you", 1); // once testing is done, change this line to a notifyPlayerBeingForceFed() function -Zym
     }
 
-
+    public void notifyPlayerBeingForceFed(Player player, Player target) {
+        PlayerUtil.message(target, "<gold>" + player.getName() + "</gold>force fed you", 1);
+    }
 }
