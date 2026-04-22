@@ -29,3 +29,9 @@ build/
 
 # VS Code
 .vscode/
+
+# Zym exclusive ignores
+gradle.properties
+.DS_Store
+.idea/
+.gitignore

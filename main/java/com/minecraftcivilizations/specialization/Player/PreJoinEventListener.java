@@ -13,6 +13,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 
 import java.util.List;
 import java.util.UUID;
@@ -52,6 +53,15 @@ public class PreJoinEventListener implements Listener {
         // Send localized join message to nearby players and to the joining player
         double radius = SpecializationConfig.getChatConfig().get("JOIN_QUIT_RADIUS", Double.class);
         String fmt    = SpecializationConfig.getChatConfig().get("JOIN_FORMAT", String.class);
+        Component msg = MiniMessage.miniMessage().deserialize(fmt.formatted(player.getName()));
+        player.getLocation().getNearbyPlayers(radius).forEach(near -> near.sendMessage(msg));
+    }
+
+    @EventHandler
+    public void playerRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        double radius = SpecializationConfig.getChatConfig().get("JOIN_QUIT_RADIUS", Double.class);
+        String fmt    = "+ " + player.displayName() + "respawned nearby";
         Component msg = MiniMessage.miniMessage().deserialize(fmt.formatted(player.getName()));
         player.getLocation().getNearbyPlayers(radius).forEach(near -> near.sendMessage(msg));
     }

@@ -124,6 +124,7 @@ public class HuntPlayerMobGoal implements Goal<Mob> {
                     CustomPlayer player1 = CoreUtil.getPlayer(p1);
                     CustomPlayer player2 = CoreUtil.getPlayer(p2);
 
+                    // The plugin returns a NullPointerException error here when it cannot retrieve the Guardsman skill level of "null" players
                     int lvl1 = player1.getSkillLevel(SkillType.GUARDSMAN);
                     int lvl2 = player2.getSkillLevel(SkillType.GUARDSMAN);
 
