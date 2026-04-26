@@ -65,6 +65,19 @@ public class Recipes {
         Bukkit.removeRecipe(NamespacedKey.minecraft("copper_leggings"));
         Bukkit.removeRecipe(NamespacedKey.minecraft("copper_boots"));
 
+        // ─── Block vanilla diamond armor & tool recipes ───
+        // Diamond gear must be crafted through the plate chain + blueprint smithing
+        // on a toughened-steel base.
+        Bukkit.removeRecipe(NamespacedKey.minecraft("diamond_helmet"));
+        Bukkit.removeRecipe(NamespacedKey.minecraft("diamond_chestplate"));
+        Bukkit.removeRecipe(NamespacedKey.minecraft("diamond_leggings"));
+        Bukkit.removeRecipe(NamespacedKey.minecraft("diamond_boots"));
+        Bukkit.removeRecipe(NamespacedKey.minecraft("diamond_sword"));
+        Bukkit.removeRecipe(NamespacedKey.minecraft("diamond_pickaxe"));
+        Bukkit.removeRecipe(NamespacedKey.minecraft("diamond_axe"));
+        Bukkit.removeRecipe(NamespacedKey.minecraft("diamond_shovel"));
+        Bukkit.removeRecipe(NamespacedKey.minecraft("diamond_hoe"));
+
         // ─── Block datapack copper tool recipes (gearplus namespace) ───
         // These are registered by BiomeDependentResources under data/gearplus/recipe/.
         NamespacedKey gpCopperAxe     = new NamespacedKey("gearplus", "copper_axe");

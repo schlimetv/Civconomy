@@ -79,6 +79,13 @@ public class SmithingAssemblyListener implements Listener {
         String templateId = templateCI.getId();
         if (!templateId.endsWith("_blueprint")) return;
 
+        // Diamond smithing is distinct: base must be a toughened-steel vanilla iron item,
+        // not a tool_handle or leather armor piece. Handle it entirely here and return.
+        if (templateId.startsWith("diamond_")) {
+            handleDiamondSmithing(event, base, addition, templateId);
+            return;
+        }
+
         CustomItem baseCI = CustomItemManager.getInstance().getCustomItem(base);
         CustomItem addCI  = CustomItemManager.getInstance().getCustomItem(addition);
 
@@ -173,6 +180,187 @@ public class SmithingAssemblyListener implements Listener {
                 }
             }
         }
+        return null;
+    }
+
+    // ═════════════════════════════════════════════════════════════
+    //  Leather-base durability transfer for copper/bronze/iron/steel armor
+    // ═════════════════════════════════════════════════════════════
+
+    /** Armor-piece custom item IDs whose leather base's durability % should carry onto the result. */
+    private static final java.util.Set<String> LEATHER_DURABILITY_TRANSFER_TARGETS = java.util.Set.of(
+        "copper_helm", "copper_breastplate", "copper_greaves", "copper_sabaton",
+        "bronze_helm", "bronze_breastplate", "bronze_greaves", "bronze_sabaton",
+        "iron_helm",   "iron_breastplate",   "iron_greaves",   "iron_sabaton",
+        "steel_helm",  "steel_breastplate",  "steel_greaves",  "steel_sabaton"
+    );
+
+    /**
+     * Runs after the blueprint handler and after vanilla's SmithingTransformRecipe
+     * has produced a result. For copper/bronze/iron/steel armor smithing, if the
+     * base slot holds a leather armor piece, transfers <b>half</b> of the leather's
+     * damage percentage onto the metal result. Pristine leather (0% damage) yields
+     * a pristine result; a 40%-damaged leather yields a 20%-damaged result; fully
+     * broken leather yields a 50%-damaged (never fully broken) result.
+     *
+     * Gold armor smithing is deliberately excluded: its recipe still uses ExactChoice
+     * against pristine leather, so this handler never matches gold.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onMetalArmorLeatherDurabilityTransfer(PrepareSmithingEvent event) {
+        SmithingInventory inv = event.getInventory();
+        ItemStack base     = inv.getItem(1);
+        ItemStack addition = inv.getItem(2);
+        ItemStack result   = event.getResult();
+
+        if (base == null || addition == null) return;
+        if (result == null || result.getType().isAir()) return;
+        if (!isLeatherArmor(base.getType())) return;
+
+        CustomItem addCI = CustomItemManager.getInstance().getCustomItem(addition);
+        if (addCI == null) return;
+        if (!LEATHER_DURABILITY_TRANSFER_TARGETS.contains(addCI.getId())) return;
+
+        // Metal armor inherits only HALF of the leather base's damage, so worn leather
+        // still produces usable gear (see the user's "100% − damage%/2" rule).
+        transferDamagePercentage(base, result, 0.5);
+        event.setResult(result);
+    }
+
+    private static boolean isLeatherArmor(Material mat) {
+        return mat == Material.LEATHER_HELMET
+            || mat == Material.LEATHER_CHESTPLATE
+            || mat == Material.LEATHER_LEGGINGS
+            || mat == Material.LEATHER_BOOTS;
+    }
+
+    // ═════════════════════════════════════════════════════════════
+    //  Diamond smithing — blueprint + toughened steel + diamond component
+    // ═════════════════════════════════════════════════════════════
+
+    /**
+     * Resolves a diamond smithing recipe and transfers the steel base's remaining
+     * durability percentage onto the vanilla diamond result.
+     *
+     * Recipe layout for both tools and armor:
+     *   template  = diamond_{slot|tool}_blueprint
+     *   base      = vanilla IRON_{slot|tool} that has been finished as toughened (blue) steel
+     *   addition  = diamond_{piece}  (diamond_helm, diamond_sword_head, ...)
+     *   result    = vanilla DIAMOND_{slot|tool} with damage = diamondMax * (1 - baseDurabilityRatio)
+     */
+    private void handleDiamondSmithing(PrepareSmithingEvent event, ItemStack base,
+                                       ItemStack addition, String templateId) {
+        // Base must be a toughened-steel item. Purple/hardened and un-marked legacy
+        // items are rejected so they can't be shortcut to diamond.
+        if (base.getItemMeta() == null
+            || !base.getItemMeta().getPersistentDataContainer()
+                .has(TOUGHENED_STEEL_KEY, PersistentDataType.BYTE)) {
+            event.setResult(null);
+            return;
+        }
+
+        CustomItem addCI = CustomItemManager.getInstance().getCustomItem(addition);
+        if (addCI == null) {
+            event.setResult(null);
+            return;
+        }
+        String addId = addCI.getId();
+
+        ItemStack result = resolveDiamondResult(templateId, addId, base.getType());
+        if (result == null) {
+            event.setResult(null);
+            return;
+        }
+
+        // Diamond inherits the steel base's damage 1:1 — a 30%-damaged steel helmet
+        // produces a 30%-damaged diamond helmet.
+        transferDamagePercentage(base, result, 1.0);
+
+        event.setResult(result);
+    }
+
+    /**
+     * Scales a fraction of {@code base}'s damage percentage onto {@code result}.
+     *
+     * <p>With {@code damageMultiplier == 1.0} the result's damage % mirrors the base
+     * (a 30%-damaged base produces a 30%-damaged result — this is the diamond case).
+     * With {@code damageMultiplier == 0.5} the result only receives half the damage
+     * (a 30%-damaged base produces a 15%-damaged result — this is the leather-armor
+     * case for copper/bronze/iron/steel).</p>
+     *
+     * <p>The result is clamped so it never ends up fully broken; at worst it keeps
+     * 1 durability remaining.</p>
+     */
+    private static void transferDamagePercentage(ItemStack base, ItemStack result, double damageMultiplier) {
+        if (!(base.getItemMeta() instanceof Damageable)) return;
+        int baseMax = effectiveMaxDamage(base);
+        if (baseMax <= 0) return;
+        int baseDamage = effectiveDamage(base);
+        double damageRatio = Math.max(0.0, Math.min(1.0, (double) baseDamage / baseMax));
+        double scaled = Math.max(0.0, Math.min(1.0, damageRatio * damageMultiplier));
+        int resMax = effectiveMaxDamage(result);
+        if (resMax <= 0) return;
+        int dmg = (int) Math.round(resMax * scaled);
+        int finalDmg = Math.max(0, Math.min(resMax - 1, dmg));
+        result.editMeta(m -> {
+            if (m instanceof Damageable rd) {
+                rd.setDamage(finalDmg);
+            }
+        });
+    }
+
+    /**
+     * Effective max-damage for an item. Damageable.getMaxDamage() throws when the
+     * item carries no explicit max_damage component (most fresh vanilla armor /
+     * tools), so we fall back to the material's vanilla max durability.
+     */
+    private static int effectiveMaxDamage(ItemStack stack) {
+        if (stack.getItemMeta() instanceof Damageable d && d.hasMaxDamage()) {
+            return d.getMaxDamage();
+        }
+        return stack.getType().getMaxDurability();
+    }
+
+    /** Current damage on an item, or 0 if it has none. Mirrors {@link #effectiveMaxDamage}. */
+    private static int effectiveDamage(ItemStack stack) {
+        if (stack.getItemMeta() instanceof Damageable d && d.hasDamage()) {
+            return d.getDamage();
+        }
+        return 0;
+    }
+
+    /**
+     * Matches a diamond blueprint + diamond component + iron base against the
+     * armor/tool maps and returns the corresponding vanilla diamond result stack,
+     * or null if no recipe applies. Durability transfer is applied by the caller.
+     */
+    private ItemStack resolveDiamondResult(String templateId, String addId, Material baseType) {
+        // Tools
+        for (var entry : TOOL_HEADS.entrySet()) {
+            String headSuffix = entry.getKey();             // e.g. sword_head
+            String toolName   = entry.getValue()[0];        // e.g. sword
+            Material ironMat  = Material.valueOf(entry.getValue()[1]); // IRON_SWORD
+
+            if (!templateId.equals("diamond_" + toolName + "_blueprint")) continue;
+            if (!addId.equals("diamond_" + headSuffix)) continue;
+            if (baseType != ironMat) continue;
+
+            return new ItemStack(Material.valueOf("DIAMOND_" + toolName.toUpperCase()));
+        }
+
+        // Armor
+        for (var entry : ARMOR_PIECES.entrySet()) {
+            String pieceSuffix = entry.getKey();            // e.g. helm
+            String slotName    = entry.getValue()[0];       // e.g. helmet
+            Material ironMat   = Material.valueOf(entry.getValue()[2]); // IRON_HELMET
+
+            if (!templateId.equals("diamond_" + slotName + "_blueprint")) continue;
+            if (!addId.equals("diamond_" + pieceSuffix)) continue;
+            if (baseType != ironMat) continue;
+
+            return new ItemStack(Material.valueOf("DIAMOND_" + slotName.toUpperCase()));
+        }
+
         return null;
     }
 
@@ -346,7 +534,20 @@ public class SmithingAssemblyListener implements Listener {
         Map.entry("steel_pickaxe_assembly",  6.0),
         Map.entry("steel_hoe_assembly",      4.0),
         Map.entry("steel_shovel_assembly",   2.0),
-        Map.entry("steel_hammer_assembly",   8.0)
+        Map.entry("steel_hammer_assembly",   8.0),
+        // Diamond armor smithing — 10× plate sets used in the addition component.
+        // (diamond_helm = 5 plate sets, breastplate = 8, greaves = 7, sabaton = 4)
+        Map.entry("diamond_helmet_smithing",     50.0),
+        Map.entry("diamond_chestplate_smithing", 80.0),
+        Map.entry("diamond_leggings_smithing",   70.0),
+        Map.entry("diamond_boots_smithing",      40.0),
+        // Diamond tool assembly — 10× plate sets used in the head.
+        // (sword_head = 2, axe_head = 3, pickaxe_head = 3, hoe_head = 2, shovel_head = 1)
+        Map.entry("diamond_sword_assembly",    20.0),
+        Map.entry("diamond_axe_assembly",      30.0),
+        Map.entry("diamond_pickaxe_assembly",  30.0),
+        Map.entry("diamond_hoe_assembly",      20.0),
+        Map.entry("diamond_shovel_assembly",   10.0)
     );
 
     private void grantSmithingXp(Player player, String blueprintId) {
@@ -391,6 +592,10 @@ public class SmithingAssemblyListener implements Listener {
     public static final NamespacedKey PURPLE_STEEL_KEY =
         new NamespacedKey("specialization", "purple_steel_armor");
 
+    /** PDC key marking blue (toughened) steel tools and armor — required as the base for diamond smithing. */
+    public static final NamespacedKey TOUGHENED_STEEL_KEY =
+        new NamespacedKey("specialization", "toughened_steel");
+
     private void applySteelStats(ItemStack result, int temperTier, int poorlyHardened) {
         Material mat = result.getType();
         boolean isPurple = (temperTier == IronBloomSystem.TEMPER_PURPLE);
@@ -415,6 +620,12 @@ public class SmithingAssemblyListener implements Listener {
         final boolean purple = isPurple;
 
         result.editMeta(m -> {
+            // Tag blue (toughened) steel so diamond smithing can validate the base slot.
+            if (!purple) {
+                m.getPersistentDataContainer().set(
+                    TOUGHENED_STEEL_KEY, PersistentDataType.BYTE, (byte) 1);
+            }
+
             // Durability
             if (m instanceof Damageable d) {
                 d.setMaxDamage(finalDur);

@@ -803,11 +803,12 @@ public class CraftingListener implements Listener {
             }
         });
 
-        // ─── Blueprint XP: 3 LIBRARIAN for bronze, 5 for iron ───
+        // ─── Blueprint XP: 3 LIBRARIAN for bronze, 5 for iron, 20 for diamond ───
         CustomPlayer bpPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance()
                 .getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
         if (bpPlayer != null) {
-            double bpXp = keyName.startsWith("iron_") ? 5.0
+            double bpXp = keyName.startsWith("diamond_") ? 20.0
+                : keyName.startsWith("iron_") ? 5.0
                 : keyName.startsWith("bronze_") ? 3.0 : 0.0;
             if (bpXp > 0) bpPlayer.addSkillXp(SkillType.LIBRARIAN, bpXp * craftCount);
         }
@@ -901,7 +902,10 @@ public class CraftingListener implements Listener {
         java.util.Map.entry("crushed_copper_ore",  new double[]{0, 5}),
         java.util.Map.entry("crushed_iron_ore",    new double[]{0, 5}),
         java.util.Map.entry("crushed_gold_ore",    new double[]{0, 5}),
-        java.util.Map.entry("bronze_blend",        new double[]{0, 5})
+        java.util.Map.entry("bronze_blend",        new double[]{0, 5}),
+        // Diamond plate and plate set: 6 blacksmith each
+        java.util.Map.entry("armor_plate_diamond",      new double[]{6, 0}),
+        java.util.Map.entry("diamond_armor_plateset",   new double[]{6, 0})
     );
 
     /**

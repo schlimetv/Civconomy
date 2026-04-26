@@ -83,7 +83,10 @@ public class MetalworkingItems {
         // ─── BRONZE (uses bronze: namespace with itemModel, not customModelData) ───
         initBronze();
 
-        // ─── BLUEPRINTS (iron + bronze components) ───
+        // ─── DIAMOND (intermediates on DIAMOND base; finished gear is vanilla DIAMOND_*) ───
+        initMetalIntermediates("diamond", Material.DIAMOND, "§b");
+
+        // ─── BLUEPRINTS (iron + bronze + steel + diamond components) ───
         initBlueprints();
     }
 
@@ -105,7 +108,7 @@ public class MetalworkingItems {
      * Blueprint IDs are named after the RESULT (e.g. iron_helmet_blueprint, not iron_helm_blueprint).
      */
     private static void initBlueprints() {
-        for (String metal : new String[]{"iron", "bronze", "steel"}) {
+        for (String metal : new String[]{"iron", "bronze", "steel", "diamond"}) {
             String cap = capitalize(metal);
             for (String[] entry : BLUEPRINT_PIECE_MAP) {
                 String result = entry[1];
@@ -113,9 +116,11 @@ public class MetalworkingItems {
                 new BlueprintItem(metal + "_" + result + "_blueprint",
                     "\u00A7b\u00A7l" + cap + " " + label + " Blueprint");
             }
-            // Hammer blueprint
-            new BlueprintItem(metal + "_hammer_blueprint",
-                "\u00A7b\u00A7l" + cap + " Hammer Blueprint");
+            // Hammer blueprint (diamond has no hammer tier)
+            if (!metal.equals("diamond")) {
+                new BlueprintItem(metal + "_hammer_blueprint",
+                    "\u00A7b\u00A7l" + cap + " Hammer Blueprint");
+            }
         }
     }
 

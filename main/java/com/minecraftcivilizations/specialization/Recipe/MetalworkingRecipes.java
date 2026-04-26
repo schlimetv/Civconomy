@@ -112,6 +112,14 @@ public class MetalworkingRecipes {
         // ─── Bronze Anvil ───
         registerBronzeAnvil(failedExceptions);
 
+        // ─── Diamond: plates, plate sets, components, blueprints, smithing ───
+        registerDiamondPlates(failedExceptions);
+        registerArmorPieces("diamond", false, "", failedExceptions);
+        registerToolHeads("diamond", false, "", failedExceptions);
+        registerBlueprints("diamond", failedExceptions);
+        registerDiamondArmorSmithing(failedExceptions);
+        registerDiamondToolSmithing(failedExceptions);
+
         Bukkit.getLogger().info("[MetalworkingRecipes] Registered " + successCount + " metalworking recipes.");
         return successCount;
     }
@@ -460,11 +468,19 @@ public class MetalworkingRecipes {
                 name   = "iron_" + slot + "_smithing";
             }
 
+            // Copper accepts any leather armor of the right slot — damaged, enchanted, etc.
+            // The leather's remaining-durability % is transferred onto the result in
+            // SmithingAssemblyListener. Gold keeps ExactChoice so only pristine leather
+            // can craft gold armor (the original pattern).
+            RecipeChoice baseChoice = isCopper
+                ? new RecipeChoice.MaterialChoice(leather)
+                : new RecipeChoice.ExactChoice(new ItemStack(leather));
+
             SmithingTransformRecipe recipe = new SmithingTransformRecipe(
                 key(name),
                 result,
                 null,                                                      // no template
-                new RecipeChoice.ExactChoice(new ItemStack(leather)),       // base: plain leather armor
+                baseChoice,                                                // base: leather armor
                 exact(metal + "_" + piece)                                 // addition: armor piece
             );
             add(recipe, name, failed);
@@ -707,11 +723,14 @@ public class MetalworkingRecipes {
                     name   = metal + "_" + slot + "_smithing";
                 }
 
+                // Any leather armor of the right slot is accepted; the leather's
+                // remaining-durability % is transferred onto the result in
+                // SmithingAssemblyListener.
                 SmithingTransformRecipe recipe = new SmithingTransformRecipe(
                     key(name),
                     result,
                     exact(metal + "_" + slot + "_blueprint"),              // template: result-named blueprint
-                    new RecipeChoice.ExactChoice(new ItemStack(leather)),   // base: leather armor
+                    new RecipeChoice.MaterialChoice(leather),              // base: any leather armor of this slot
                     exact(metal + "_" + piece)                             // addition: armor piece
                 );
                 add(recipe, name, failed);
@@ -1121,6 +1140,97 @@ public class MetalworkingRecipes {
                 exact(metal + "_hammer_head")
             );
             add(recipe, name, failed);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Diamond recipes
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Diamond plates and plate sets. Diamond differs from other metals:
+     * the plate-to-plate-set ratio is 3 → 2 (other metals are 3 → 1),
+     * so diamond is more efficient per plate than iron or steel.
+     * <pre>
+     *   3 diamonds   (row)    → 2 diamond plates
+     *   3 plates     (column) → 2 diamond plate sets
+     * </pre>
+     */
+    private static void registerDiamondPlates(List<String> failed) {
+        // 3 diamonds → 2 plates
+        ShapedRecipe plate = new ShapedRecipe(key("armor_plate_diamond"), stack("armor_plate_diamond", 2));
+        plate.shape("DDD");
+        plate.setIngredient('D', new RecipeChoice.ExactChoice(new ItemStack(Material.DIAMOND)));
+        add(plate, "armor_plate_diamond", failed);
+
+        // 3 plates → 2 plate sets
+        ShapedRecipe plateset = new ShapedRecipe(key("diamond_armor_plateset"), stack("diamond_armor_plateset", 2));
+        plateset.shape("P", "P", "P");
+        plateset.setIngredient('P', exact("armor_plate_diamond"));
+        add(plateset, "diamond_armor_plateset", failed);
+    }
+
+    /**
+     * Diamond armor smithing:
+     *   template = diamond_{slot}_blueprint
+     *   base     = vanilla IRON_{slot}     (SmithingAssemblyListener validates it is toughened steel)
+     *   addition = diamond_{piece}         (diamond_helm / diamond_breastplate / ...)
+     *   result   = vanilla DIAMOND_{slot}; damage is set at prepare-time so the result
+     *              preserves the same remaining-durability % as the steel base.
+     *
+     * The base is MaterialChoice because toughened-steel IRON_* items carry variable
+     * PDC (attribute modifiers, temper tier, TOUGHENED_STEEL_KEY) that ExactChoice
+     * can't match. Validation and durability transfer are done in the listener.
+     */
+    private static void registerDiamondArmorSmithing(List<String> failed) {
+        for (String[] entry : BP_ARMOR_MAP) {
+            try {
+                String piece = entry[0];                     // helm, breastplate, greaves, sabaton
+                String slot  = entry[1];                     // helmet, chestplate, leggings, boots
+                Material ironMat    = Material.valueOf(entry[3]);
+                Material diamondMat = Material.valueOf("DIAMOND_" + slot.toUpperCase());
+
+                SmithingTransformRecipe recipe = new SmithingTransformRecipe(
+                    key("diamond_" + slot + "_smithing"),
+                    new ItemStack(diamondMat),
+                    exact("diamond_" + slot + "_blueprint"),
+                    new RecipeChoice.MaterialChoice(ironMat),
+                    exact("diamond_" + piece)
+                );
+                add(recipe, "diamond_" + slot + "_smithing", failed);
+            } catch (Exception e) {
+                failed.add("diamond_" + entry[1] + "_smithing [setup] (" + e.getMessage() + ")");
+            }
+        }
+    }
+
+    /**
+     * Diamond tool smithing:
+     *   template = diamond_{tool}_blueprint
+     *   base     = vanilla IRON_{tool}    (validated as toughened steel in listener)
+     *   addition = diamond_{tool}_head
+     *   result   = vanilla DIAMOND_{tool}
+     * Durability-transfer matches the armor case.
+     */
+    private static void registerDiamondToolSmithing(List<String> failed) {
+        for (String[] entry : BP_TOOL_MAP) {
+            try {
+                String head = entry[0];                      // sword_head, axe_head, ...
+                String tool = entry[1];                      // sword, axe, ...
+                Material ironMat    = Material.valueOf(entry[2]);
+                Material diamondMat = Material.valueOf("DIAMOND_" + tool.toUpperCase());
+
+                SmithingTransformRecipe recipe = new SmithingTransformRecipe(
+                    key("diamond_" + tool + "_assembly"),
+                    new ItemStack(diamondMat),
+                    exact("diamond_" + tool + "_blueprint"),
+                    new RecipeChoice.MaterialChoice(ironMat),
+                    exact("diamond_" + head)
+                );
+                add(recipe, "diamond_" + tool + "_assembly", failed);
+            } catch (Exception e) {
+                failed.add("diamond_" + entry[1] + "_assembly [setup] (" + e.getMessage() + ")");
+            }
         }
     }
 }
