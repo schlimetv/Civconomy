@@ -180,10 +180,7 @@ public class Bandage extends CustomItem {
         boolean self_heal = target.equals(healer);
 
         double base_heal = 4.0;
-        if(healer_in_combat){
-            base_heal --;
-        }
-        if(self_heal){
+        if(healer_in_combat || self_heal){
             base_heal --;
         }
 
