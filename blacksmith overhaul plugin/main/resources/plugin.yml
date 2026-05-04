@@ -1,0 +1,14 @@
+name: BlacksmithOverhaul
+version: '0.0.0.1'
+main: com.minecraftcivilizations.blacksmithoverhaul.BlacksmithOverhaul
+api-version: '1.21.8'
+depend:
+  - MinecraftCivilizationsCore
+# Specialization is on softdepend (not depend) because Specialization itself
+# hard-depends on BlacksmithOverhaul — making it bidirectional `depend` would
+# fail Paper's circular-dependency check. softdepend gives us the class-loader
+# visibility we need without making the dependency declaration circular.
+softdepend:
+  - Specialization
+authors: [ DNFneca ]
+description: Metalworking system extracted from the Specialization plugin.

@@ -1,0 +1,151 @@
+================================================================
+BRED HORSE TAMING BUG — INVESTIGATION REPORT
+================================================================
+
+Date: 2026-04-24
+Plugin: Civconomy / Specialization (Paper 1.21.8)
+Bug: Wild horses can be tamed, but bred horses (foals raised to adulthood) cannot.
+
+
+----------------------------------------------------------------
+CODE PATHS TOUCHING HORSE BREED / TAME
+----------------------------------------------------------------
+
+Only one file in the plugin source contains handlers for the relevant events:
+
+  main/java/com/minecraftcivilizations/specialization/Listener/Player/Interactions/PlayerInteractEntityListener.java
+
+  Lines 37-46  -- onPlayerBreed(EntityBreedEvent)
+      Cancels breeding if the breeder's FARMER skill is below
+      FARMER_BREED_LEVEL_<MOB_TYPE> (default 2 / JOURNEYMAN for HORSE).
+
+  Lines 48-57  -- onPlayerTame(EntityTameEvent)
+      Cancels taming if the owner's skill is below the configured
+      threshold. Default for TAME_HORSE = (FARMER, 0 / NOVICE),
+      meaning any player passes.
+
+Config defaults are defined in:
+  main/java/com/minecraftcivilizations/specialization/Config/SpecializationConfig.java:419-433
+
+MobManager.onCreatureSpawn (Combat/Mobs/MobManager.java:672) fires on
+SpawnReason.BREEDING, but for HORSE:
+  - setDefaultRuleSetChance(100, ..., HORSE, ...) is set at line 525
+  - No override variations are registered for HORSE
+  - rollMobOverrideRule(HORSE) therefore returns null
+  - convertEntityToVariation / applyStatsToEntity are NOT called
+  - setPersistent(false) at line 752 is NEVER reached for bred horses
+
+
+----------------------------------------------------------------
+WHAT THE PLUGIN DOES NOT DO
+----------------------------------------------------------------
+
+A full-source grep confirmed the plugin does NOT:
+  - Call setTamed / setOwner / setOwnerUniqueId on any horse
+  - Cast to AbstractHorse / Horse / Tameable anywhere
+  - Cancel VehicleEnterEvent, PlayerInteractEntityEvent, or
+    EntityMountEvent for horses (only DOLPHIN is cancelled in
+    MobManager.onMobMount)
+  - Write PersistentDataContainer keys to horse entities
+  - Modify horse attributes (JUMP_STRENGTH, MOVEMENT_SPEED, MAX_HEALTH,
+    etc.) outside the mob-variation path that horses never enter
+  - Run any scheduled task / tick loop that targets horse entities
+
+Wild horses and bred horses traverse identical code paths in this
+plugin. There is no horse-specific divergence between SpawnReason.NATURAL
+(and CHUNK_GEN) and SpawnReason.BREEDING.
+
+
+----------------------------------------------------------------
+INCORRECT HYPOTHESES RULED OUT
+----------------------------------------------------------------
+
+  * "setPersistent(false) at MobManager.java:752 breaks bred horses"
+      Ruled out: this line lives inside applyStatsToEntity, which is
+      only reached via convertEntityToVariation, which is gated on a
+      non-null MobOverrideRule. HORSE has no rule, so null is returned
+      and the whole branch is skipped.
+
+  * "Default TAME_HORSE config blocks low-level players"
+      Ruled out: default is 0 (NOVICE). Every player has skill >= 0.
+      The tame event is never cancelled by default.
+
+  * "onPlayerBreed cancellation leaves the child in a broken state"
+      Ruled out: a cancelled EntityBreedEvent prevents the child from
+      being added to the world at all. The known Paper issue #5444 is
+      about parents looping in love mode, not about child state.
+
+
+----------------------------------------------------------------
+WHAT THE BUG IS LIKELY NOT
+----------------------------------------------------------------
+
+Because wild horses work, the bug is NOT:
+  - The TAME_HORSE config threshold (would affect both)
+  - The onPlayerTame handler itself (would affect both)
+  - General horse-interaction blocking (would affect both)
+
+
+----------------------------------------------------------------
+REMAINING SUSPECTS
+----------------------------------------------------------------
+
+1. MinecraftCivilizationsCore (external dependency)
+     Listed in plugin.yml as a hard dependency. Source is NOT in this
+     repo -- only a compiled JAR in the Gradle cache. Could register
+     its own EntityTameEvent or EntityBreedEvent handlers that the
+     plugin source doesn't show.
+
+2. Another plugin on the server
+     Some unrelated plugin could be cancelling VehicleEnterEvent or
+     EntityTameEvent for entities spawned via BREEDING.
+
+3. Vanilla Paper / Mojang issue
+     MC-221539 documents "animals tamed by riding now untamable" --
+     but this affects all such animals, not just bred ones.
+
+4. Runtime config drift
+     plugins/Specialization/tamingConfig.properties on disk could hold
+     a value different from the code default. Wild horses working
+     makes this less likely unless there is a different key path for
+     bred entities, which I did not find in the source.
+
+
+----------------------------------------------------------------
+SUGGESTED NEXT STEPS
+----------------------------------------------------------------
+
+  1. Grep MinecraftCivilizationsCore source (if available) for
+     EntityTameEvent, EntityBreedEvent, HORSE, AbstractHorse.
+
+  2. Reproduce in-game with /debug listen mob (or equivalent) enabled
+     to see which handlers fire during breed and attempted tame.
+
+  3. Test whether a player can even MOUNT the bred foal with empty hand.
+     If mounting itself is blocked, the bug is in PlayerInteractEntityEvent
+     or VehicleEnterEvent handling, not EntityTameEvent.
+
+  4. Test as an op -- ops bypass many permission checks; if ops can
+     tame bred horses but non-ops cannot, the bug is permission-gated.
+
+  5. Inspect the live tamingConfig.properties and farmerConfig.properties
+     on disk for any modified values.
+
+  6. Diff the server's plugin list -- identify anything else that might
+     hook EntityTameEvent.
+
+
+----------------------------------------------------------------
+KEY FILE:LINE REFERENCES
+----------------------------------------------------------------
+
+  PlayerInteractEntityListener.java:37-46     -- onPlayerBreed
+  PlayerInteractEntityListener.java:48-57     -- onPlayerTame
+  SpecializationConfig.java:419-433           -- default skill thresholds
+  SpecializationConfig.java:103-104           -- BREEDABLE / TAMEABLE lists
+  MobManager.java:525                         -- setDefaultRuleSetChance(100, ..., HORSE, ...)
+  MobManager.java:672-741                     -- onCreatureSpawn (short-circuits for HORSE)
+  MobManager.java:751-848                     -- applyStatsToEntity (never reached for horses)
+  MobOverrideRuleSet.java:41-64               -- rollRule (returns null for HORSE)
+  SkillLevel.java:9-14                        -- NOVICE=0, JOURNEYMAN=2
+  plugin.yml:5-7                              -- depends on MinecraftCivilizationsCore
