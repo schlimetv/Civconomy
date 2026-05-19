@@ -4,6 +4,7 @@ import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.Skill;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
+import com.minecraftcivilizations.specialization.Skill.SkillType;
 import com.minecraftcivilizations.specialization.util.CoreUtil;
 import minecraftcivilizations.com.minecraftCivilizationsCore.GUI.GUI;
 import minecraftcivilizations.com.minecraftCivilizationsCore.GUI.GUIItem;
@@ -21,6 +22,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -65,6 +67,30 @@ public class ClassGUI extends GUI {
         viewer.openInventory(Bukkit.createInventory(viewer, 54, Component.text(target.getName() + "'s Stats")));
 
         super.open(viewer);
+    }
+
+    // Append the player's chosen miner subclass to a skill-card lore. No-op if
+    // skill is not MINER, the MinerOverhaul plugin isn't installed, or the
+    // player hasn't picked a subclass yet. Guarded so the spec plugin still
+    // loads if MinerOverhaul is absent.
+    private static void addSubclassLoreIfMiner(ItemMeta meta, CustomPlayer cp, SkillType skillType) {
+        if (skillType != SkillType.MINER) return;
+        if (Bukkit.getPluginManager().getPlugin("MinerOverhaul") == null) return;
+        try {
+            Player p = Bukkit.getPlayer(cp.getUuid());
+            if (p == null) return;
+            com.minecraftcivilizations.mineroverhaul.MinerOverhaulApi.getSubclass(p).ifPresent(sub -> {
+                List<Component> lore = meta.lore();
+                if (lore == null) lore = new ArrayList<>();
+                lore.add(Component.empty());
+                lore.add(Component.text("Subclass: ", NamedTextColor.GRAY)
+                        .decoration(TextDecoration.ITALIC, false)
+                        .append(Component.text("[" + sub.displayName() + "] Prospecting", sub.chatColor())
+                                .decoration(TextDecoration.ITALIC, false)));
+                meta.lore(lore);
+            });
+        } catch (LinkageError ignored) {
+        }
     }
 
     private GUIItem makeSettingsItem(Player player){
@@ -210,6 +236,7 @@ public class ClassGUI extends GUI {
                         add(Component.text("Pretty awesome if you ask me!").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.GRAY));
                     }
                 });
+                addSubclassLoreIfMiner(itemMeta, customPlayer, skill.getSkillType());
                 itemStack.setItemMeta(itemMeta);
                 this.getItems().put(i++, new GUIItem(itemStack, () -> {
                     new RecipesGUI(customPlayer, skill.getSkillType()).open(Bukkit.getPlayer(customPlayer.getUuid()));
@@ -239,6 +266,7 @@ public class ClassGUI extends GUI {
                         add(Component.text("You did it!").decoration(TextDecoration.ITALIC, false).color(NamedTextColor.GRAY));
                     }
                 });
+                addSubclassLoreIfMiner(itemMeta, customPlayer, skill.getSkillType());
                 itemStack.setItemMeta(itemMeta);
                 this.getItems().put(i++, new GUIItem(itemStack, () -> {
                     new RecipesGUI(customPlayer, skill.getSkillType()).open(Bukkit.getPlayer(customPlayer.getUuid()));
@@ -292,6 +320,7 @@ public class ClassGUI extends GUI {
                     }else add(Component.text("You are maximum level in this class."));
                 }
             });
+            addSubclassLoreIfMiner(itemMeta, customPlayer, skill.getSkillType());
             itemStack.setItemMeta(itemMeta);
             this.getItems().put(i++, new GUIItem(itemStack, () -> {
                 new RecipesGUI(customPlayer, skill.getSkillType()).open(Bukkit.getPlayer(customPlayer.getUuid()));

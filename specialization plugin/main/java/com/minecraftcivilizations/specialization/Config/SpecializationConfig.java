@@ -99,6 +99,8 @@ public class SpecializationConfig {
     private static ConfigFile instinctConfig;
     @Getter
     private static ConfigFile locatorBarConfig;
+    @Getter
+    private static ConfigFile builderConfig;
 
     private static List<EntityType> BREEDABLE =  List.of(EntityType.AXOLOTL, EntityType.CAMEL, EntityType.CAT, EntityType.CHICKEN, EntityType.COD, EntityType.COW, EntityType.DONKEY, EntityType.FOX, EntityType.FROG, EntityType.GOAT, EntityType.HOGLIN, EntityType.HORSE, EntityType.LLAMA, EntityType.MOOSHROOM, EntityType.OCELOT, EntityType.PANDA, EntityType.PARROT, EntityType.PIG, EntityType.RABBIT, EntityType.SHEEP, EntityType.STRIDER, EntityType.TADPOLE, EntityType.TURTLE, EntityType.WOLF);
     public static final List<EntityType> TAMEABLE = List.of(EntityType.WOLF, EntityType.OCELOT, EntityType.CAT, EntityType.PARROT, EntityType.HORSE, EntityType.DONKEY, EntityType.MULE, EntityType.LLAMA, EntityType.TRADER_LLAMA);
@@ -457,6 +459,18 @@ public class SpecializationConfig {
             fields.add(new Pair<>("INSTINCT_DETECTION_RADIUS_LEVEL_2", 12.0));
             fields.add(new Pair<>("INSTINCT_DETECTION_RADIUS_LEVEL_3", 16.0));
             fields.add(new Pair<>("INSTINCT_GLOW_DURATION_TICKS", 300));
+        });
+
+        builderConfig = new ConfigFile(Specialization.getInstance(), "builderConfig", null, fields -> {
+            // Max blocks above terrain surface a player may place at each builder level.
+            fields.add(new Pair<>("BUILDER_HEIGHT_CAP_LEVEL_0", 10));
+            fields.add(new Pair<>("BUILDER_HEIGHT_CAP_LEVEL_1", 20));
+            fields.add(new Pair<>("BUILDER_HEIGHT_CAP_LEVEL_2", 30));
+            fields.add(new Pair<>("BUILDER_HEIGHT_CAP_LEVEL_3", 40));
+            fields.add(new Pair<>("BUILDER_HEIGHT_CAP_LEVEL_4", 60));
+            fields.add(new Pair<>("BUILDER_HEIGHT_CAP_LEVEL_5", 100));
+            // If true, block placement is disallowed in any biome whose key ends with "ocean".
+            fields.add(new Pair<>("BUILDER_OCEAN_PLACEMENT_DISALLOWED", true));
         });
 
         xpMonitorConfig = new ConfigFile(Specialization.getInstance(), "XpMonitorAlertThresholds", null, fields -> {

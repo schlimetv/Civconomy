@@ -6,6 +6,8 @@ depend:
   - MinecraftCivilizationsCore
   - ProtocolLib
   - BlacksmithOverhaul
+softdepend:
+  - MinerOverhaul
 authors: [ DNFneca ]
 description: Lyphea
 

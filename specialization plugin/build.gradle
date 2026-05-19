@@ -50,12 +50,17 @@ dependencies {
     // Core plugin is provided by the server (do NOT bundle)
     compileOnly("com.minecraftcivilizations:minecraftcivilizationscore:0.5.1")
 
-    // BlacksmithOverhaul is also provided by the server. We compile against its
+    // BlacksmithOverhaul is provided by the server. We compile against its
     // built JAR so this project can import MetalworkingItems, MetalworkingRecipes,
-    // Blueprints, the listener classes, and MetalworkingApi. The JAR is produced
-    // by the sibling "blacksmith overhaul plugin" project and must be built first
-    // (it in turn compileOnly-depends on this jar — bootstrap is a one-time dance).
-    compileOnly files("../blacksmith overhaul plugin/build/libs/BlacksmithOverhaul-0.0.0.1.jar")
+    // Blueprints, the listener classes, and MetalworkingApi. Drop the prebuilt
+    // jar at <repo root>/jar dependencies/BlacksmithOverhaul-0.0.0.1.jar.
+    compileOnly files("../jar dependencies/BlacksmithOverhaul-0.0.0.1.jar")
+
+    // MinerOverhaul plugin is provided by the server. We compile against its
+    // built JAR so this project can import MinerOverhaulApi (for /class GUI
+    // subclass display) and MinerSubclass. Drop the prebuilt jar at
+    // <repo root>/jar dependencies/MinerOverhaul-0.0.0.1.jar.
+    compileOnly files("../jar dependencies/MinerOverhaul-0.0.0.1.jar")
 
     implementation "com.google.code.gson:gson:2.13.1"
 

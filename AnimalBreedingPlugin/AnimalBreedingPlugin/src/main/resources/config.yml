@@ -1,0 +1,38 @@
+# AnimalBreeding Plugin Configuration
+
+settings:
+  debug: false
+  prefix: "&6[AnimalBreeding]&r "
+
+breeding:
+  # How long (seconds) an animal must wait after breeding before it can breed again
+  cooldown-seconds: 300
+
+  # Shared food pool cost:
+  #   base-food-cost        - total food required for just the two breeding animals
+  #   extra-food-per-animal - extra food added per additional same-type animal in the same pen
+  #
+  # Both animals draw from the shared pool. Each must contribute >= 1 food.
+  # Animals earn food by: player right-clicking with breeding food, OR eating grass naturally.
+  base-food-cost: 3
+  extra-food-per-animal: 2
+
+# Supported animals (hardcoded): COW, PIG, CHICKEN, SHEEP
+# Babies are never eligible.
+#
+# Breeding foods:
+#   COW / SHEEP  → Wheat
+#   PIG          → Carrot
+#   CHICKEN      → Wheat Seeds
+#   ALL          → Eating grass (passive, +1 to that animal's fed count)
+#
+# Hoe display:
+#   Hold ANY hoe in your OFF-HAND to see a floating label above each
+#   nearby supported adult animal showing its feeding progress and status.
+
+  # Mutation chance (0.0 – 1.0). Change in-game with /abmutation <percent>.
+  mutation-chance: 0.02
+
+  # Maximum non-behavior traits per animal. Behaviors (DOCILE/SKITTISH/AGGRESSIVE)
+  # are separate and never count against this cap. Change with /abmaxtraits <n>.
+  max-traits: 3

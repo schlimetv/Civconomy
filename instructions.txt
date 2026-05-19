@@ -1,0 +1,52 @@
+Miner overhaul:
+
+Let’s create a separate plugin for the miner overhaul.  Its classes will be imported into specialization and vice versa.
+
+The goal:
+
+Miners are able to choose a single “sub class” that allows prospecting for a given ore. Once the player picks a sub class, he cannot change, even if he dies/loses levels and later regains a miner level. The sub class selection will be available once player levels up to the appropriate miner level. It should be displayed as text in chat.
+
+Upon leveling miner (check specialization plugin’s cheer message and hook into there): “You may sub class into [Ore 1] Prospecting, [Ore 2] Prospecting, … , OR [Ore X] Prospecting. Note: You cannot change your subclass once you have selected it.”
+
+Hovering over the “[Ore] Prospecting” will show a description of the sub class, followed by “click to select”. 
+After clicking, another text in the chat is shown “Are you sure you want to choose [Ore] Prospecting? Subclass cannot be changed once selected. <Yes> <No>”
+
+If player clicks yes:
+“You have selected [Ore] Prospecting”.
+If clicks no, then “No subclass selected. If you change your mind, you may use /subclass miner [ore] to select a subclass”. 
+
+Level 1 miner can choose Coal Prospecting. 
+Level 2 miner can choose Copper Prospecting or previous levels’ prospecting.
+Level 3 miner can choose Gold prospecting OR Gem Prospecting, or previous levels’ prospecting. Gem prospecting includes redstone, emerald, and lapis.
+Level 4 miner can choose Iron prospecting or previous levels’ prospecting..
+Level 5 miner can choose Diamond prospecting or previous levels’ prospecting..
+
+Prospecting: right click with a pickaxe to “scan” for nearby ores. Prospecting should be displayed as text in the chat. Will scan within 100 blocks in the x z plane each direction of the player, and detect if there are any ore veins in the area. 
+
+“Found nothing of interest” is reported when no ore veins found in the scan. 
+Proximity is reported on prospecting: 
+“Found traces of [ore]” is given when the “straight line” distance (in x y z coordinates) between player and ore vein is over 75 blocks.
+“Found small sample of [ore]” is given when distance is less than 75 but greater than 40.
+“Found medium sample of [ore]” is given when distance is less than 40 but greater than 15.
+“[size] [ore] vein is detected close by” is given when distance is less than 15.
+
+For size of vein, we will use “small”, “average”, and “large”. For the actual size (block count), we will refer to the datapack. 
+Note: these distances should be configurable in the plugin’s config.yml
+
+Example:
+<Coal Prospecting> Found nothing of interest.
+<Gem Prospecting> Found traces of lapis lazuli. 
+
+Additional goal:
+
+Let’s configure the BDR datapack to add configured features for ore veins. There will be 3 sizes:
+Tiny = ~200 ore blocks
+Small = ~400 ore blocks
+Average = ~600 ore blocks
+Large = ~1000 ore blocks
+Coal and copper ore will have either average or large sizes.
+Gold, lapis, redstone, and emeralds will have tiny, small, and average sizes.
+Iron can have any size.
+Diamond will only have tiny size.
+
+Ore veins are blob shaped. Each ore vein will have 5-8 block long “streaks” of smaller veins coming from the central blob in all directions (like rays from the sun).

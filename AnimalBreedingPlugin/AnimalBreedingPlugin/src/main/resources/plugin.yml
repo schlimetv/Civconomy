@@ -1,0 +1,33 @@
+name: AnimalBreeding
+version: '1.0.0'
+main: com.animalbreeding.plugin.AnimalBreedingPlugin
+api-version: '1.21'
+description: Custom manual-feeding breeding for Cow, Pig, Chicken, and Sheep.
+author: YourName
+softdepend:
+  - Specialization
+
+commands:
+  abmutation:
+    description: Set the genetic mutation chance (operators only).
+    usage: /abmutation <0-100>
+    permission: animalbreeding.admin
+
+  abmaxtraits:
+    description: Set the maximum non-behavior traits per animal (operators only).
+    usage: /abmaxtraits <n>
+    permission: animalbreeding.admin
+
+  animallabel:
+    description: Toggle floating animal stat labels for yourself.
+    usage: /animallabel <on|off>
+    permission: animalbreeding.label
+
+permissions:
+  animalbreeding.admin:
+    description: Operator-level access to AnimalBreeding settings.
+    default: op
+
+  animalbreeding.label:
+    description: Allows toggling personal animal stat labels.
+    default: true

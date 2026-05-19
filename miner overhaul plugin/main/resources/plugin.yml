@@ -1,0 +1,27 @@
+name: MinerOverhaul
+version: '${version}'
+main: com.minecraftcivilizations.mineroverhaul.MinerOverhaul
+api-version: '1.21.8'
+depend:
+  - MinecraftCivilizationsCore
+  - Specialization
+authors: [ Civconomy ]
+description: Miner subclass + ore prospecting
+
+commands:
+  subclass:
+    description: Select or view your specialization subclass.
+    usage: /subclass miner <ore>
+    permission: mineroverhaul.subclass
+  minerprospect:
+    description: Admin commands for the prospecting cluster scanner.
+    usage: /minerprospect <rescan|status|cancel|reload|where>
+    permission: mineroverhaul.admin
+
+permissions:
+  mineroverhaul.subclass:
+    description: Allows players to choose a miner subclass.
+    default: true
+  mineroverhaul.admin:
+    description: Allows admins to manage the cluster scanner.
+    default: op

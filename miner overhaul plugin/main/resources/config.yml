@@ -1,0 +1,42 @@
+prospect:
+  radius-blocks: 100
+  cooldown-seconds: 5
+  distance-thresholds:
+    traces: 75
+    small-sample: 40
+    medium-sample: 15
+  size-buckets:
+    tiny-max: 600
+    small-max: 900
+    average-max: 1600
+    large-max: 2300
+
+scan:
+  radius-blocks: 5000
+  chunks-per-tick: 8
+  tick-period-ms: 50
+  region-cache-size: 64
+  min-cluster-size: 20
+  run-on-enable: true
+
+ores:
+  coal:    [COAL_ORE, DEEPSLATE_COAL_ORE]
+  copper:  [COPPER_ORE, DEEPSLATE_COPPER_ORE]
+  gold:    [GOLD_ORE, DEEPSLATE_GOLD_ORE]
+  gem:     [REDSTONE_ORE, DEEPSLATE_REDSTONE_ORE, LAPIS_ORE, DEEPSLATE_LAPIS_ORE, EMERALD_ORE, DEEPSLATE_EMERALD_ORE]
+  iron:    [IRON_ORE, DEEPSLATE_IRON_ORE]
+  diamond: [DIAMOND_ORE, DEEPSLATE_DIAMOND_ORE]
+
+debug:
+  # If true, spawn a marker armor stand with a glowing, named tag at the
+  # centroid of every detected vein. Use /kill @e[tag=minerprospect_debug] to
+  # clean them up.
+  spawn-armor-stands: true
+
+descriptions:
+  coal:    "Scan for coal veins within 100 blocks."
+  copper:  "Scan for copper veins within 100 blocks."
+  gold:    "Scan for gold veins within 100 blocks."
+  gem:     "Scan for redstone, lapis, and emerald veins within 100 blocks."
+  iron:    "Scan for iron veins within 100 blocks."
+  diamond: "Scan for diamond veins within 100 blocks."
