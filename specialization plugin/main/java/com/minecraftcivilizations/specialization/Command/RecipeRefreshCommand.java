@@ -3,7 +3,7 @@ package com.minecraftcivilizations.specialization.Command;
 import co.aikar.commands.BaseCommand;
 import co.aikar.commands.annotation.*;
 import com.minecraftcivilizations.specialization.Recipe.Recipes;
-import com.minecraftcivilizations.blacksmithoverhaul.recipe.Blueprints;
+//import com.minecraftcivilizations.blacksmithoverhaul.recipe.Blueprints;
 import com.minecraftcivilizations.specialization.Specialization;
 import org.bukkit.Bukkit;
 import org.bukkit.Keyed;
@@ -27,7 +27,7 @@ public class RecipeRefreshCommand extends BaseCommand {
     @CommandPermission("specialization.recipe.refresh")
     public void onRefresh(CommandSender sender) {
         Recipes.init();
-        Blueprints.init();
+        //Blueprints.init();
         Specialization.getInstance().getLogger().info("Custom recipes/blueprints have been refreshed.");
 
         sender.sendMessage("§aCustom recipes have been re-initialized.");

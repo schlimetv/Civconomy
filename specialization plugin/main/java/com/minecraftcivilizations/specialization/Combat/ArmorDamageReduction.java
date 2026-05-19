@@ -1,6 +1,6 @@
 package com.minecraftcivilizations.specialization.Combat;
 
-import com.minecraftcivilizations.blacksmithoverhaul.api.MetalworkingApi;
+//import com.minecraftcivilizations.blacksmithoverhaul.api.MetalworkingApi;
 
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
@@ -226,9 +226,8 @@ public class ArmorDamageReduction {
                 equipment.getHelmet(), equipment.getChestplate(),
                 equipment.getLeggings(), equipment.getBoots()}) {
             if (piece == null || !piece.hasItemMeta()) continue;
-            if (!piece.getItemMeta().getPersistentDataContainer().has(
-                    MetalworkingApi.PURPLE_STEEL_KEY,
-                    org.bukkit.persistence.PersistentDataType.BYTE)) continue;
+            //if (!piece.getItemMeta().getPersistentDataContainer().has(
+            //        MetalworkingApi.PURPLE_STEEL_KEY, org.bukkit.persistence.PersistentDataType.BYTE)) continue;
             // Sum the armor value from this piece's attribute modifiers
             var modifiers = piece.getItemMeta().getAttributeModifiers(org.bukkit.attribute.Attribute.ARMOR);
             if (modifiers != null) {
@@ -253,9 +252,8 @@ public class ArmorDamageReduction {
                 org.bukkit.inventory.EquipmentSlot.LEGS, org.bukkit.inventory.EquipmentSlot.FEET}) {
             ItemStack piece = equipment.getItem(slot);
             if (piece == null || !piece.hasItemMeta()) continue;
-            if (!piece.getItemMeta().getPersistentDataContainer().has(
-                    MetalworkingApi.PURPLE_STEEL_KEY,
-                    org.bukkit.persistence.PersistentDataType.BYTE)) continue;
+            //if (!piece.getItemMeta().getPersistentDataContainer().has(
+            //        MetalworkingApi.PURPLE_STEEL_KEY, org.bukkit.persistence.PersistentDataType.BYTE)) continue;
             // Apply 2 extra durability damage (3x total = 1 normal + 2 extra)
             if (piece.getItemMeta() instanceof org.bukkit.inventory.meta.Damageable d) {
                 int maxDmg = d.hasMaxDamage() ? d.getMaxDamage() : 0;

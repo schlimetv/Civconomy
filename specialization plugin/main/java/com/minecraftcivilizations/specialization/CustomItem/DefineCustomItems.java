@@ -1,6 +1,6 @@
 package com.minecraftcivilizations.specialization.CustomItem;
 
-import com.minecraftcivilizations.blacksmithoverhaul.item.MetalworkingItems;
+//import com.minecraftcivilizations.blacksmithoverhaul.item.MetalworkingItems;
 
 import com.minecraftcivilizations.specialization.Combat.ArmorEquipAttributes;
 import com.minecraftcivilizations.specialization.Listener.Player.ReviveListener;
@@ -37,7 +37,7 @@ public class DefineCustomItems implements Listener {
 
         // Register all metalworking custom items (plates, plate sets, armor, tools)
         // -- content lives in BlacksmithOverhaul; we just trigger its static init.
-        MetalworkingItems.init();
+        //MetalworkingItems.init();
 
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }

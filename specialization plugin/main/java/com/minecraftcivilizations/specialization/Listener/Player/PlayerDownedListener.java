@@ -164,14 +164,17 @@ public class PlayerDownedListener implements Listener {
      */
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
-        double DeathXPPercentageLoss = 1.0;
         Player player = event.getEntity();
 
         CustomPlayer customPlayer = (CustomPlayer) MinecraftCivilizationsCore.getInstance().getCustomPlayerManager().getCustomPlayer(player.getUniqueId());
         // Reset all skills to 0
         for (SkillType type : SkillType.values()) {
             double currentXp = customPlayer.getSkill(type).getXp();
-            customPlayer.addSkillXp(type, -currentXp * DeathXPPercentageLoss, null, true, false); // subtract current XP to zero it
+            if (type == SkillType.MINER) {
+                customPlayer.addSkillXp(type, Math.floor(-currentXp * 0.3), null, true, false);
+            } else {
+                customPlayer.addSkillXp(type, Math.floor(-currentXp * 0.5), null, true, false);
+            }
         }
 
         if (isDowned(player)) {

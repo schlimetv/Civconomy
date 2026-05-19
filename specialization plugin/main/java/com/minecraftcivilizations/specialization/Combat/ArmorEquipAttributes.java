@@ -1,6 +1,6 @@
 package com.minecraftcivilizations.specialization.Combat;
 
-import com.minecraftcivilizations.blacksmithoverhaul.api.MetalworkingApi;
+//import com.minecraftcivilizations.blacksmithoverhaul.api.MetalworkingApi;
 
 import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import com.minecraftcivilizations.specialization.Listener.Player.Inventories.SpecializationCraftItemEvent;
@@ -365,11 +365,10 @@ public class ArmorEquipAttributes implements Listener {
      */
     public ItemStack applyStats(ItemStack item){
         // Steel armor has custom stats applied at smithing — don't override
-        if (item.hasItemMeta() && item.getItemMeta().getPersistentDataContainer().has(
-                MetalworkingApi.PURPLE_STEEL_KEY,
-                PersistentDataType.BYTE)) {
-            return item;
-        }
+        //if (item.hasItemMeta() && item.getItemMeta().getPersistentDataContainer().has(
+        //        MetalworkingApi.PURPLE_STEEL_KEY, PersistentDataType.BYTE)) {
+        //    return item;
+        //}
         // Also check for steel toughness modifier (blue tempered steel)
         if (item.hasItemMeta()) {
             var mods = item.getItemMeta().getAttributeModifiers(Attribute.ARMOR);

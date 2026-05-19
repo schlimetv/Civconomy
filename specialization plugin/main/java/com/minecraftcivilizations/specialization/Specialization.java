@@ -13,14 +13,14 @@ import com.minecraftcivilizations.specialization.Combat.*;
 import com.minecraftcivilizations.specialization.Command.*;
 import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
-import com.minecraftcivilizations.blacksmithoverhaul.item.IronBloomSystem;
-import com.minecraftcivilizations.blacksmithoverhaul.item.MetalworkingItems;
-import com.minecraftcivilizations.blacksmithoverhaul.recipe.Blueprints;
-import com.minecraftcivilizations.blacksmithoverhaul.recipe.MetalworkingRecipes;
-import com.minecraftcivilizations.blacksmithoverhaul.listener.ForgeSmithingSoundListener;
-import com.minecraftcivilizations.blacksmithoverhaul.listener.FurnaceListener;
-import com.minecraftcivilizations.blacksmithoverhaul.listener.FurnaceSoundListener;
-import com.minecraftcivilizations.blacksmithoverhaul.listener.SmithingAssemblyListener;
+//import com.minecraftcivilizations.blacksmithoverhaul.item.IronBloomSystem;
+//import com.minecraftcivilizations.blacksmithoverhaul.item.MetalworkingItems;
+//import com.minecraftcivilizations.blacksmithoverhaul.recipe.Blueprints;
+//import com.minecraftcivilizations.blacksmithoverhaul.recipe.MetalworkingRecipes;
+//import com.minecraftcivilizations.blacksmithoverhaul.listener.ForgeSmithingSoundListener;
+//import com.minecraftcivilizations.blacksmithoverhaul.listener.FurnaceListener;
+//import com.minecraftcivilizations.blacksmithoverhaul.listener.FurnaceSoundListener;
+//import com.minecraftcivilizations.blacksmithoverhaul.listener.SmithingAssemblyListener;
 import com.minecraftcivilizations.specialization.Data.DataManager;
 import com.minecraftcivilizations.specialization.Distance.TownManager;
 import com.minecraftcivilizations.specialization.Golem.IronGolemListener;
@@ -190,11 +190,11 @@ public final class Specialization extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new CraftingListener(this), this);
         getServer().getPluginManager().registerEvents(new AutoCrafterListener(), this);
 
-        getServer().getPluginManager().registerEvents(new FurnaceListener(), this);
-        getServer().getPluginManager().registerEvents(new IronBloomSystem(), this);
-        getServer().getPluginManager().registerEvents(new FurnaceSoundListener(this), this);
-        getServer().getPluginManager().registerEvents(new ForgeSmithingSoundListener(this), this);
-        getServer().getPluginManager().registerEvents(new SmithingAssemblyListener(), this);
+//        getServer().getPluginManager().registerEvents(new FurnaceListener(), this);
+//        getServer().getPluginManager().registerEvents(new IronBloomSystem(), this);
+//        getServer().getPluginManager().registerEvents(new FurnaceSoundListener(this), this);
+//        getServer().getPluginManager().registerEvents(new ForgeSmithingSoundListener(this), this);
+//        getServer().getPluginManager().registerEvents(new SmithingAssemblyListener(), this);
 
         new TownManager();
         getServer().getPluginManager().registerEvents(new MoveListener(), this);
@@ -245,7 +245,7 @@ public final class Specialization extends JavaPlugin {
 
         try {
             Recipes.init();
-            Blueprints.init();
+            //Blueprints.init();
             XpGainMonitor.init();
             Bukkit.updateRecipes();
         } catch (Exception e) {

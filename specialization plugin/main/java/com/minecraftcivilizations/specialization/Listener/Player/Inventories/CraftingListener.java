@@ -5,7 +5,7 @@ import com.minecraftcivilizations.specialization.Config.SpecializationConfig;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItem;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
 import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.blacksmithoverhaul.api.MetalworkingApi;
+//import com.minecraftcivilizations.blacksmithoverhaul.api.MetalworkingApi;
 import com.minecraftcivilizations.specialization.Player.CustomPlayer;
 import com.minecraftcivilizations.specialization.Skill.Classless;
 import com.minecraftcivilizations.specialization.Skill.SkillLevel;
@@ -650,16 +650,16 @@ public class CraftingListener implements Listener {
                 if (ingredient == null || ingredient.getType().isAir()) continue;
                 com.minecraftcivilizations.specialization.CustomItem.CustomItem custom =
                         CustomItemManager.getInstance().getCustomItem(ingredient);
-                if (custom != null) {
-                    // Wrought iron is functionally equivalent to vanilla iron for non-gear recipes.
-                    // BlacksmithOverhaul owns the predicate so the id stays out of this file.
-                    if (MetalworkingApi.isWroughtIron(ingredient)) {
-                        hasWroughtIronCustomItem = true;
-                    } else {
-                        hasNonWroughtIronCustomItem = true;
-                        break;
-                    }
-                }
+//                if (custom != null) {
+//                    // Wrought iron is functionally equivalent to vanilla iron for non-gear recipes.
+//                    // BlacksmithOverhaul owns the predicate so the id stays out of this file.
+//                    if (MetalworkingApi.isWroughtIron(ingredient)) {
+//                        hasWroughtIronCustomItem = true;
+//                    } else {
+//                        hasNonWroughtIronCustomItem = true;
+//                        break;
+//                    }
+//                }
             }
             if (hasNonWroughtIronCustomItem) {
                 event.getInventory().setResult(null);

@@ -61,7 +61,7 @@ public class PreJoinEventListener implements Listener {
     public void playerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
         double radius = SpecializationConfig.getChatConfig().get("JOIN_QUIT_RADIUS", Double.class);
-        String fmt    = "+ " + player.displayName() + "respawned nearby";
+        String fmt    = SpecializationConfig.getChatConfig().get("RESPAWN_FORMAT", String.class);
         Component msg = MiniMessage.miniMessage().deserialize(fmt.formatted(player.getName()));
         player.getLocation().getNearbyPlayers(radius).forEach(near -> near.sendMessage(msg));
     }

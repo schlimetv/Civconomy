@@ -1,7 +1,7 @@
 package com.minecraftcivilizations.specialization.Recipe;
 
 import com.minecraftcivilizations.specialization.Specialization;
-import com.minecraftcivilizations.blacksmithoverhaul.recipe.MetalworkingRecipes;
+//import com.minecraftcivilizations.blacksmithoverhaul.recipe.MetalworkingRecipes;
 import com.minecraftcivilizations.specialization.CustomItem.CustomItemManager;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Item.CustomItem;
 import minecraftcivilizations.com.minecraftCivilizationsCore.Item.CustomItemRegistry;
@@ -182,7 +182,7 @@ public class Recipes {
         addArmorTrims(failedExceptions, skippedDuplicateCount);
 
         // ----- METALWORKING RECIPES (delegated to BlacksmithOverhaul) -----
-        successCount += MetalworkingRecipes.register(failedExceptions);
+        //successCount += MetalworkingRecipes.register(failedExceptions);
 
         // ----- FINAL LOG -----
         Bukkit.getLogger().info("[Recipes] Registration complete. Total successes: " + successCount);
