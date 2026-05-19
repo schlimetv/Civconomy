@@ -176,6 +176,25 @@ public class Recipes {
             } else skippedDuplicateCount++;
         }
 
+        // ----- WOOD SHEARS RECIPE -----
+        // 2 logs on a diagonal → 1 Wood Shears (low-durability early-game shears).
+        com.minecraftcivilizations.specialization.CustomItem.CustomItem woodShear =
+                CustomItemManager.getInstance().getCustomItem("wood_shear");
+        if (woodShear != null) {
+            NamespacedKey woodShearKey = new NamespacedKey(Specialization.getInstance(), "wood_shear");
+            ShapedRecipe woodShearRecipe = new ShapedRecipe(woodShearKey, woodShear.createItemStack());
+            woodShearRecipe.shape("L ", " L");
+            woodShearRecipe.setIngredient('L', new RecipeChoice.MaterialChoice(Tag.LOGS));
+            if (!recipeExists(woodShearKey, woodShearRecipe.getResult())) {
+                try {
+                    Bukkit.addRecipe(woodShearRecipe, true);
+                    successCount++;
+                } catch (Exception e) {
+                    failedExceptions.add("wood_shear (" + e.getMessage() + ")");
+                }
+            } else skippedDuplicateCount++;
+        }
+
         // ----- EXTRA RECIPES -----
         successCount += addNetherRecipes(failedExceptions, skippedDuplicateCount);
         addUnobtainableRecipes(failedExceptions, skippedDuplicateCount);

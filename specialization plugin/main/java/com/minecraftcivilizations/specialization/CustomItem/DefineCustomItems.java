@@ -32,8 +32,12 @@ import java.util.List;
 public class DefineCustomItems implements Listener {
 
     public Bandage bandage;
+    public WoodShears woodShears;
+    public PlantFiber plantFiber;
     public DefineCustomItems(Specialization plugin) {
         this.bandage = new Bandage("custombandage", "Bandage");
+        this.woodShears = new WoodShears("wood_shear", "§eWood Shears");
+        this.plantFiber = new PlantFiber("plant_fiber", "§aPlant Fiber");
 
         // Register all metalworking custom items (plates, plate sets, armor, tools)
         // -- content lives in BlacksmithOverhaul; we just trigger its static init.
