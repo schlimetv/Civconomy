@@ -183,7 +183,7 @@ public class Recipes {
         if (woodShear != null) {
             NamespacedKey woodShearKey = new NamespacedKey(Specialization.getInstance(), "wood_shear");
             ShapedRecipe woodShearRecipe = new ShapedRecipe(woodShearKey, woodShear.createItemStack());
-            woodShearRecipe.shape("L ", " L");
+            woodShearRecipe.shape(" L", "L ");
             woodShearRecipe.setIngredient('L', new RecipeChoice.MaterialChoice(Tag.LOGS));
             if (!recipeExists(woodShearKey, woodShearRecipe.getResult())) {
                 try {
